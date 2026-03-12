@@ -1476,8 +1476,8 @@ async function ejecutarDiagnostico() {
   resultado.innerHTML = `<div class="diagnostico-card"><div class="typing-dots"><span></span><span></span><span></span></div></div>`;
 
   try {
-    const base64Data = diagnosticoFotoBase64.split(',')[1];
-    const mimeType = diagnosticoFotoBase64.split(';')[0].split(':')[1];
+    const comprimida = await comprimirImagen(diagnosticoFotoBase64, 1024, 0.85);
+    const base64Data = comprimida.split(',')[1];
 
     const contextoPlanta = `La planta es: ${planta.nombre} (${planta.tipo}). Se riega cada ${planta.frecRiego} días. Notas: ${planta.notas || 'ninguna'}.`;
 
@@ -1489,7 +1489,7 @@ async function ejecutarDiagnostico() {
         body: JSON.stringify({
           contents: [{
             parts: [
-              { inline_data: { mime_type: mimeType, data: base64Data } },
+              { inline_data: { mime_type: 'image/jpeg', data: base64Data } },
               { text: `Eres un experto botánico. ${contextoPlanta}
 Analiza el estado de salud de esta planta en la foto. Responde en español con este formato exacto:
 
@@ -1660,8 +1660,9 @@ async function identificarPlanta() {
   resultado.innerHTML = '<div class="typing-dots"><span></span><span></span><span></span></div>';
 
   try {
-    const base64Data = fotoBase64.split(',')[1];
-    const mimeType = fotoBase64.split(';')[0].split(':')[1];
+    // Comprimir imagen a JPEG máximo 1024px para evitar límites de la API
+    const comprimida = await comprimirImagen(fotoBase64, 1024, 0.85);
+    const base64Data = comprimida.split(',')[1];
 
     const res = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
@@ -1671,7 +1672,7 @@ async function identificarPlanta() {
         body: JSON.stringify({
           contents: [{
             parts: [
-              { inline_data: { mime_type: mimeType, data: base64Data } },
+              { inline_data: { mime_type: 'image/jpeg', data: base64Data } },
               { text: `Identifica esta planta con precisión. Responde ÚNICAMENTE en este formato, una línea por campo, sin texto adicional:
 NOMBRE: [nombre común en español]
 TIPO: [exactamente uno de: Interior / Exterior / Suculenta/Cactus / Flor / Frutal / Aromática]
@@ -1690,36 +1691,42 @@ Si no es una planta escribe solo: NO_ES_PLANTA` }
     );
 
     const data = await res.json();
+
+    // Mostrar error de API si existe
+    if (data.error) {
+      resultado.innerHTML = `⚠️ Error API: ${data.error.message}`;
+      btn.disabled = false;
+      btn.textContent = '🔍 Identificar planta con IA';
+      return;
+    }
+
     const texto = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
-    if (!texto || texto.includes('NO_ES_PLANTA')) {
-      resultado.innerHTML = '⚠️ No pude identificar una planta. Intenta con otra foto con mejor luz y enfoque.';
+    if (!texto || texto.trim() === 'NO_ES_PLANTA') {
+      resultado.innerHTML = '⚠️ No pude identificar la planta. Asegúrate de que la planta ocupe la mayor parte de la foto.';
     } else {
-      // Parser robusto: busca cada clave en cualquier línea
       const getVal = (key) => {
         const regex = new RegExp(`^${key}\\s*:\\s*(.+)`, 'im');
         const match = texto.match(regex);
         return match ? match[1].trim() : '';
       };
 
-      const nombre     = getVal('NOMBRE');
-      const tipo       = getVal('TIPO');
-      const riego      = parseInt(getVal('RIEGO')) || 7;
-      const fert       = parseInt(getVal('FERTILIZACION')) || 30;
-      const luz        = getVal('LUZ');
-      const sustrato   = getVal('SUSTRATO');
+      const nombre       = getVal('NOMBRE');
+      const tipo         = getVal('TIPO');
+      const riego        = parseInt(getVal('RIEGO')) || 7;
+      const fert         = parseInt(getVal('FERTILIZACION')) || 30;
+      const luz          = getVal('LUZ');
+      const sustrato     = getVal('SUSTRATO');
       const fertilizante = getVal('FERTILIZANTE');
-      const notasIA    = getVal('NOTAS');
+      const notasIA      = getVal('NOTAS');
 
-      // Construir notas completas
       const notasCompletas = [
-        luz        ? `☀️ Luz: ${luz}` : '',
-        sustrato   ? `🪴 Sustrato: ${sustrato}` : '',
+        luz          ? `☀️ Luz: ${luz}` : '',
+        sustrato     ? `🪴 Sustrato: ${sustrato}` : '',
         fertilizante ? `🌱 Fertilizante: ${fertilizante}` : '',
-        notasIA    ? `📝 ${notasIA}` : '',
+        notasIA      ? `📝 ${notasIA}` : '',
       ].filter(Boolean).join('. ');
 
-      // Rellenar campos
       if (nombre) document.getElementById('f-nombre').value = nombre;
       if (tipo) {
         const sel = document.getElementById('f-tipo');
@@ -1733,7 +1740,6 @@ Si no es una planta escribe solo: NO_ES_PLANTA` }
       document.getElementById('f-fertilizacion').value = fert;
       if (notasCompletas) document.getElementById('f-notas').value = notasCompletas;
 
-      // Si está en nuestra DB local, usar esos datos también
       if (nombre && PLANTAS_DB[nombre]) rellenarCamposPlanta(nombre);
 
       resultado.innerHTML = `
@@ -1743,11 +1749,30 @@ Si no es una planta escribe solo: NO_ES_PLANTA` }
     }
   } catch(e) {
     console.error(e);
-    resultado.innerHTML = '⚠️ Error al identificar. Verifica tu API key y conexión a internet.';
+    resultado.innerHTML = `⚠️ Error de conexión: ${e.message}`;
   }
 
   btn.disabled = false;
   btn.textContent = '🔍 Identificar planta con IA';
+}
+
+// Comprimir imagen usando canvas
+function comprimirImagen(base64, maxPx, calidad) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      let w = img.width, h = img.height;
+      if (w > maxPx || h > maxPx) {
+        if (w > h) { h = Math.round(h * maxPx / w); w = maxPx; }
+        else       { w = Math.round(w * maxPx / h); h = maxPx; }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL('image/jpeg', calidad));
+    };
+    img.src = base64;
+  });
 }
 
 
