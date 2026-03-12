@@ -1068,7 +1068,7 @@
 const EMOJIS = ['🪴','🌵','🌸','🌺','🌻','🌹','🌷','🌿','🍃','🍀','🌱','🎋','🎍','🪷','🌼','💐','🍁','🌾','🎄','🪻','🌳','🎑','🏵️','🌲'];
 
 // ── Tu Gemini API key (gratis en aistudio.google.com) ──
-const GEMINI_API_KEY = 'TU_GEMINI_API_KEY';
+const GEMINI_API_KEY = 'AIzaSyDv8NJ4WwiWS_dKMOxAiK2kqH4WLyrXP70';
 
 let plantas = [];
 let selectedEmoji = '🪴';
