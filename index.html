@@ -13,7 +13,7 @@
 <!-- Firebase SDK -->
 <script type="module">
   import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-  import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+  import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
   import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, query, orderBy } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
   const firebaseConfig = {
@@ -32,6 +32,10 @@
   const provider = new GoogleAuthProvider();
   let unsubscribe = null;
 
+  // Detectar si corre como PWA instalada (sin barra de navegador)
+  const isPWA = window.navigator.standalone === true ||
+                window.matchMedia('(display-mode: standalone)').matches;
+
   function suscribirPlantas(userId) {
     if (unsubscribe) unsubscribe();
     const q = query(collection(db, 'usuarios', userId, 'plantas'), orderBy('creadaEn', 'asc'));
@@ -42,6 +46,11 @@
     }, err => console.error('Firestore error:', err));
   }
 
+  // Manejar resultado del redirect (después de volver desde Google en PWA)
+  getRedirectResult(auth).then(result => {
+    if (result?.user) console.log('Login por redirect OK:', result.user.displayName);
+  }).catch(e => console.error('Redirect result error:', e));
+
   onAuthStateChanged(auth, user => {
     const loginScreen = document.getElementById('login-screen');
     const appContent  = document.getElementById('app-content');
@@ -51,7 +60,6 @@
       window._fbUserPhoto = user.photoURL || '';
       if (loginScreen) loginScreen.style.display = 'none';
       if (appContent)  appContent.style.display = 'block';
-      // Actualizar avatar y nombre en header
       const avatar = document.getElementById('user-avatar');
       const uname  = document.getElementById('user-name');
       if (avatar) avatar.src = window._fbUserPhoto;
@@ -78,10 +86,21 @@
 
   window._fbSignIn = async () => {
     try {
-      await signInWithPopup(auth, provider);
+      if (isPWA) {
+        // En PWA (iPhone con app instalada) usar redirect — los popups no funcionan
+        await signInWithRedirect(auth, provider);
+      } else {
+        // En navegador normal usar popup
+        await signInWithPopup(auth, provider);
+      }
     } catch(e) {
       console.error(e);
-      alert('Error al iniciar sesión: ' + e.message);
+      // Si popup falla por cualquier razón, intentar redirect como fallback
+      if (e.code === 'auth/popup-blocked' || e.code === 'auth/popup-closed-by-user') {
+        await signInWithRedirect(auth, provider);
+      } else {
+        alert('Error al iniciar sesión: ' + e.message);
+      }
     }
   };
 
@@ -750,6 +769,17 @@
   .btn-icon.trasplante-btn { background: #e8f5e9; color: #2d6a3f; }
   .btn-icon.trasplante-btn:hover { background: #2d6a3f; color: white; }
 
+  .detalle-chip {
+    background: var(--crema);
+    border-radius: 12px;
+    padding: 12px 14px;
+    font-size: 0.82rem;
+    color: var(--texto);
+    line-height: 1.5;
+  }
+  .detalle-chip b { display:block; color: var(--verde-oscuro); font-size:0.72rem; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:2px; }
+  .detalle-chip span { font-size:0.88rem; font-weight:600; color:var(--texto); }
+
   .diagnostico-card {
     background: var(--blanco);
     border-radius: 14px;
@@ -1015,6 +1045,57 @@
 
 </div><!-- /app-content -->
 
+<!-- ══ MODAL DETALLE PLANTA ══ -->
+<div class="form-overlay" id="detalle-overlay" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="form-card" style="max-width:500px;padding:0;overflow:hidden">
+    <!-- Foto / header -->
+    <div id="detalle-header" style="min-height:160px;background:var(--verde-oscuro);display:flex;align-items:center;justify-content:center;position:relative">
+      <img id="detalle-foto" src="" style="width:100%;height:200px;object-fit:cover;display:none">
+      <div id="detalle-emoji-big" style="font-size:5rem"></div>
+      <button onclick="document.getElementById('detalle-overlay').classList.remove('open')"
+        style="position:absolute;top:12px;right:12px;background:rgba(0,0,0,0.35);border:none;border-radius:50%;width:32px;height:32px;color:white;font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center">✕</button>
+    </div>
+
+    <div style="padding:20px">
+      <!-- Nombre y tipo -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+        <h2 id="detalle-nombre" style="font-family:'Playfair Display',serif;font-size:1.5rem;color:var(--verde-oscuro)"></h2>
+        <span id="detalle-tipo" style="font-size:0.72rem;font-weight:700;background:var(--crema-oscuro);color:var(--texto-suave);padding:4px 10px;border-radius:20px"></span>
+      </div>
+
+      <!-- Badges estado -->
+      <div id="detalle-badges" style="display:flex;gap:8px;margin:12px 0;flex-wrap:wrap"></div>
+
+      <!-- Grid de características -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+        <div class="detalle-chip">💧 <b>Riego</b><br><span id="dc-riego"></span></div>
+        <div class="detalle-chip">🌱 <b>Fertilización</b><br><span id="dc-fert"></span></div>
+        <div class="detalle-chip">☀️ <b>Último riego</b><br><span id="dc-ultimo-riego"></span></div>
+        <div class="detalle-chip">📅 <b>Última fertilización</b><br><span id="dc-ultima-fert"></span></div>
+      </div>
+
+      <!-- Notas completas -->
+      <div id="detalle-notas-sec" style="display:none;background:var(--crema);border-radius:12px;padding:14px;margin-bottom:12px;font-size:0.85rem;color:var(--texto);line-height:1.7">
+        <div style="font-size:0.7rem;font-weight:700;color:var(--verde-medio);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">📋 Notas de cuidado</div>
+        <div id="detalle-notas"></div>
+      </div>
+
+      <!-- Info de DB si existe -->
+      <div id="detalle-db-sec" style="display:none;background:#f0fdf4;border-radius:12px;padding:14px;margin-bottom:12px;font-size:0.85rem;color:var(--texto);line-height:1.7;border-left:3px solid var(--verde-medio)">
+        <div style="font-size:0.7rem;font-weight:700;color:var(--verde-medio);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">🌿 Trasplante</div>
+        <div id="detalle-db-trasplante"></div>
+      </div>
+
+      <!-- Acciones rápidas -->
+      <div style="display:flex;gap:10px;margin-top:4px">
+        <button id="detalle-btn-regar" style="flex:1;padding:12px;background:var(--azul-agua);color:white;border:none;border-radius:12px;font-family:'Lato',sans-serif;font-size:0.88rem;font-weight:700;cursor:pointer">💧 Regar ahora</button>
+        <button id="detalle-btn-trasplante" style="flex:1;padding:12px;background:var(--verde-medio);color:white;border:none;border-radius:12px;font-family:'Lato',sans-serif;font-size:0.88rem;font-weight:700;cursor:pointer">🪴 Trasplante</button>
+        <button id="detalle-btn-diagnostico" style="flex:1;padding:12px;background:#f59e0b;color:white;border:none;border-radius:12px;font-family:'Lato',sans-serif;font-size:0.88rem;font-weight:700;cursor:pointer">🩺 Diagnóstico</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ══ MODAL TRASPLANTE ══ -->
 <div class="form-overlay" id="trasplante-overlay">
   <div class="form-card" style="max-width:480px">
@@ -1262,8 +1343,9 @@ function renderPlantas() {
   lista.innerHTML = plantas.map((p, i) => {
     const dRiego = diasDesde(p.ultimoRiego);
     const dFert = diasDesde(p.ultimaFert);
+    const db = PLANTAS_DB[p.nombre] || {};
     return `
-    <div class="card">
+    <div class="card" onclick="abrirDetallePlanta(${i})" style="cursor:pointer">
       <div class="plant-card">
         <div class="plant-img">
           ${p.foto ? `<img src="${p.foto}" alt="${p.nombre}">` : p.emoji || '🪴'}
@@ -1271,13 +1353,12 @@ function renderPlantas() {
         <div class="plant-info">
           <h3>${p.nombre}</h3>
           <div class="tipo">${p.tipo}</div>
-          ${p.notas ? `<div class="notas">"${p.notas}"</div>` : ''}
           <div class="estado-badges">
             ${getEstadoBadge(dRiego, p.frecRiego, '💧')}
             ${getEstadoBadge(dFert, p.frecFert, '🌱')}
           </div>
         </div>
-        <div class="plant-actions">
+        <div class="plant-actions" onclick="event.stopPropagation()">
           <button class="btn-icon agua" onclick="riegoRapido(${i})" title="Regar ahora">💧</button>
           <button class="btn-icon trasplante-btn" onclick="abrirTrasplante(${i})" title="Guía de trasplante">🪴</button>
           <button class="btn-icon diagnostico" onclick="abrirDiagnostico(${i})" title="Diagnóstico IA">🩺</button>
@@ -1288,6 +1369,69 @@ function renderPlantas() {
   }).join('');
 }
 
+
+// ════════════════════════════════
+//  DETALLE PLANTA (tap en tarjeta)
+// ════════════════════════════════
+function abrirDetallePlanta(i) {
+  const p = plantas[i];
+  const db = PLANTAS_DB[p.nombre] || {};
+  const overlay = document.getElementById('detalle-overlay');
+
+  // Foto o emoji
+  const foto = document.getElementById('detalle-foto');
+  const emojiBig = document.getElementById('detalle-emoji-big');
+  if (p.foto) {
+    foto.src = p.foto; foto.style.display = 'block'; emojiBig.style.display = 'none';
+  } else {
+    foto.style.display = 'none'; emojiBig.style.display = 'block'; emojiBig.textContent = p.emoji || '🪴';
+  }
+
+  document.getElementById('detalle-nombre').textContent = p.nombre;
+  document.getElementById('detalle-tipo').textContent = p.tipo;
+
+  // Badges
+  const dRiego = diasDesde(p.ultimoRiego);
+  const dFert  = diasDesde(p.ultimaFert);
+  document.getElementById('detalle-badges').innerHTML =
+    getEstadoBadge(dRiego, p.frecRiego, '💧') + getEstadoBadge(dFert, p.frecFert, '🌱');
+
+  // Chips
+  document.getElementById('dc-riego').textContent       = `Cada ${p.frecRiego} días`;
+  document.getElementById('dc-fert').textContent        = `Cada ${p.frecFert} días`;
+  document.getElementById('dc-ultimo-riego').textContent = p.ultimoRiego ? `Hace ${dRiego} día${dRiego!==1?'s':''}` : 'Nunca registrado';
+  document.getElementById('dc-ultima-fert').textContent  = p.ultimaFert  ? `Hace ${dFert} día${dFert!==1?'s':''}` : 'Nunca registrado';
+
+  // Notas
+  const notasSec = document.getElementById('detalle-notas-sec');
+  if (p.notas) {
+    // Mostrar notas formateadas separando por '. ' en líneas
+    document.getElementById('detalle-notas').innerHTML = p.notas
+      .split(/\.\s+|(?<=📝\s[^.]+\.)/)
+      .filter(Boolean)
+      .map(n => `<div style="margin-bottom:4px">${n.trim().endsWith('.')?n.trim():n.trim()+'.'}</div>`)
+      .join('');
+    notasSec.style.display = 'block';
+  } else {
+    notasSec.style.display = 'none';
+  }
+
+  // Trasplante de DB
+  const dbSec = document.getElementById('detalle-db-sec');
+  if (db.trasplante) {
+    document.getElementById('detalle-db-trasplante').textContent = db.trasplante;
+    dbSec.style.display = 'block';
+  } else {
+    dbSec.style.display = 'none';
+  }
+
+  // Botones de acción
+  document.getElementById('detalle-btn-regar').onclick = () => { riegoRapido(i); overlay.classList.remove('open'); };
+  document.getElementById('detalle-btn-trasplante').onclick = () => { overlay.classList.remove('open'); abrirTrasplante(i); };
+  document.getElementById('detalle-btn-diagnostico').onclick = () => { overlay.classList.remove('open'); abrirDiagnostico(i); };
+
+  overlay.classList.add('open');
+}
 
 // ════════════════════════════════
 //  TRASPLANTE
