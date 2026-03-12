@@ -1540,25 +1540,76 @@ Sé específico, práctico y cálido. Si la planta se ve sana, dilo con entusias
 }
 
 
-const PLANTAS_COMUNES = [
-  'Albahaca','Aloe Vera','Anturio','Areca','Árbol de Jade','Begonia',
-  'Bromelia','Cactus','Calathea','Camelia','Cardenal','Cinta',
-  'Clivia','Cola de Caballo','Costilla de Adán','Croton','Diefenbaquia',
-  'Dracena','Enredadera','Espatifilo','Eucalipto','Ficus','Filodendro',
-  'Gardenia','Geranio','Helécho','Hibisco','Hiedra','Hortensia',
-  'Jazmín','Lavanda','Lirio','Malamadre','Margarita','Menta',
-  'Monstera','Neem','Orquídea','Palmera','Palo de Agua','Peperomia',
-  'Petunias','Pilea','Pitosporo','Pothos','Rosa','Romero',
-  'Sábila','Sansevieria','Suculenta','Tomate','Violeta Africana','Yuca',
-  'Zamioculca','Albahaca morada','Bambú','Bonsái','Caladio','Cala',
-  'Canna','Cayena','Clavel','Dragón','Flor de Mayo','Gazania',
-  'Girasol','Impatiens','Jacaranda','Lantana','Limonero','Maracuyá',
-  'Maranta','Mejorana','Moringa','Nardos','Perejil','Petunia',
-  'Portulaca','Ruda','Salvia','Tomillo','Verbena','Zinnia'
-];
+const PLANTAS_DB = {
+  'Albahaca':         { tipo:'Aromática', riego:3,  fert:20, emoji:'🌿', notas:'Luz solar directa mínimo 6 horas. Sustrato: 2 tazas tierra + 1 taza perlita. Fertilizante triple 15: 1g/litro cada 20 días. Cortar flores para que dure más.' },
+  'Aloe Vera':        { tipo:'Suculenta/Cactus', riego:14, fert:45, emoji:'🌵', notas:'Luz solar directa 4-6 horas. Sustrato: 2 tazas tierra cactus + 1 taza arena gruesa. Fertilizante triple 15: 0.5g/litro cada 45 días. No mojar las hojas.' },
+  'Anturio':          { tipo:'Interior', riego:7,  fert:30, emoji:'🌺', notas:'Luz indirecta brillante. Sustrato: 2 tazas tierra negra + 1 taza corteza de pino. Fertilizante triple 15: 1g/litro cada 30 días. Alta humedad, pulveriza hojas.' },
+  'Areca':            { tipo:'Interior', riego:7,  fert:30, emoji:'🌴', notas:'Luz indirecta o sol suave. Sustrato: 3 tazas tierra + 1 taza perlita. Fertilizante triple 15: 1g/litro cada 30 días. Sensible a agua con cloro.' },
+  'Begonia':          { tipo:'Interior', riego:5,  fert:21, emoji:'🌸', notas:'Luz indirecta brillante. Sustrato: 2 tazas tierra + 0.5 taza perlita. Fertilizante triple 15: 1g/litro cada 21 días. Evitar mojar flores.' },
+  'Bromelia':         { tipo:'Interior', riego:7,  fert:30, emoji:'🌺', notas:'Luz indirecta. Sustrato: 2 tazas tierra orquídeas + 1 taza corteza. Fertilizante foliar triple 15: 0.5g/litro cada 30 días. Llenar el centro con agua.' },
+  'Cactus':           { tipo:'Suculenta/Cactus', riego:21, fert:60, emoji:'🌵', notas:'Pleno sol mínimo 6 horas. Sustrato: 1 taza tierra + 2 tazas arena gruesa + 0.5 taza perlita. Fertilizante triple 15: 0.5g/litro cada 60 días. Solo en verano.' },
+  'Calathea':         { tipo:'Interior', riego:5,  fert:21, emoji:'🌿', notas:'Luz indirecta media. Sustrato: 2 tazas tierra negra + 1 taza perlita + 0.5 taza carbón. Fertilizante triple 15: 0.5g/litro cada 21 días. Agua sin cloro, alta humedad.' },
+  'Camelia':          { tipo:'Exterior', riego:5,  fert:30, emoji:'🌸', notas:'Sol de mañana, sombra de tarde. Sustrato: 3 tazas tierra ácida + 1 taza perlita. Fertilizante para acidófilas: 1g/litro cada 30 días. pH 5.5-6.5.' },
+  'Cinta':            { tipo:'Interior', riego:7,  fert:30, emoji:'🌿', notas:'Luz indirecta o sombra. Sustrato: 2 tazas tierra + 1 taza perlita. Fertilizante triple 15: 1g/litro cada 30 días. Muy resistente, ideal principiantes.' },
+  'Costilla de Adán': { tipo:'Interior', riego:7,  fert:30, emoji:'🌿', notas:'Luz indirecta brillante. Sustrato: 3 tazas tierra negra + 1 taza perlita + 0.5 taza corteza. Fertilizante triple 15: 1.5g/litro cada 30 días. Limpiar hojas con trapo húmedo.' },
+  'Croton':           { tipo:'Interior', riego:5,  fert:21, emoji:'🍁', notas:'Luz solar directa suave o indirecta brillante. Sustrato: 2 tazas tierra + 1 taza perlita. Fertilizante triple 15: 1g/litro cada 21 días. Más luz = más color en hojas.' },
+  'Dracena':          { tipo:'Interior', riego:10, fert:30, emoji:'🌿', notas:'Luz indirecta media. Sustrato: 3 tazas tierra + 1 taza perlita. Fertilizante triple 15: 1g/litro cada 30 días. Sensible a flúor, usar agua filtrada.' },
+  'Espatifilo':       { tipo:'Interior', riego:5,  fert:21, emoji:'🌸', notas:'Sombra o luz indirecta baja. Sustrato: 2 tazas tierra negra + 1 taza perlita. Fertilizante triple 15: 0.5g/litro cada 21 días. Hojas caídas = sed.' },
+  'Ficus':            { tipo:'Interior', riego:7,  fert:30, emoji:'🌳', notas:'Luz indirecta brillante, sin corrientes de aire. Sustrato: 3 tazas tierra + 1 taza perlita. Fertilizante triple 15: 1g/litro cada 30 días. No mover de lugar.' },
+  'Filodendro':       { tipo:'Interior', riego:7,  fert:21, emoji:'🌿', notas:'Luz indirecta media o baja. Sustrato: 2 tazas tierra + 1 taza perlita + 0.5 taza carbón. Fertilizante triple 15: 1g/litro cada 21 días. Tóxica para mascotas.' },
+  'Gardenia':         { tipo:'Interior', riego:5,  fert:21, emoji:'🌸', notas:'Luz solar indirecta brillante. Sustrato: 3 tazas tierra ácida + 1 taza perlita. Fertilizante acidófilas: 1g/litro cada 21 días. Alta humedad, pH 5-6.' },
+  'Geranio':          { tipo:'Exterior', riego:4,  fert:21, emoji:'🌸', notas:'Sol directo mínimo 6 horas. Sustrato: 2 tazas tierra + 1 taza perlita + 0.5 taza arena. Fertilizante triple 15: 1g/litro cada 21 días. Podar flores secas.' },
+  'Helécho':          { tipo:'Interior', riego:3,  fert:21, emoji:'🌿', notas:'Luz indirecta o sombra. Sustrato: 2 tazas tierra negra + 1 taza perlita + 1 taza musgo. Fertilizante triple 15: 0.5g/litro cada 21 días. Humedad muy alta.' },
+  'Hibisco':          { tipo:'Exterior', riego:3,  fert:14, emoji:'🌺', notas:'Sol directo mínimo 6 horas. Sustrato: 3 tazas tierra + 1 taza compost. Fertilizante triple 15: 1.5g/litro cada 14 días. Poda leve para más flores.' },
+  'Hiedra':           { tipo:'Interior', riego:7,  fert:30, emoji:'🌿', notas:'Luz indirecta o sombra. Sustrato: 2 tazas tierra + 1 taza perlita. Fertilizante triple 15: 0.5g/litro cada 30 días. Tóxica, usar guantes al manipular.' },
+  'Hortensia':        { tipo:'Exterior', riego:3,  fert:21, emoji:'💐', notas:'Sol de mañana, sombra de tarde. Sustrato: 3 tazas tierra ácida + 1 taza perlita. Fertilizante acidófilas: 1g/litro cada 21 días. El pH define el color.' },
+  'Jazmín':           { tipo:'Exterior', riego:4,  fert:21, emoji:'🌸', notas:'Sol directo o semisombra. Sustrato: 3 tazas tierra + 0.5 taza perlita. Fertilizante triple 15: 1g/litro cada 21 días. Podar después de florecer.' },
+  'Lavanda':          { tipo:'Exterior', riego:7,  fert:30, emoji:'💜', notas:'Sol directo mínimo 8 horas. Sustrato: 2 tazas tierra + 2 tazas arena gruesa. Fertilizante triple 15: 0.5g/litro cada 30 días. Tolera sequía, odia encharcamiento.' },
+  'Lirio':            { tipo:'Exterior', riego:5,  fert:21, emoji:'🌸', notas:'Sol directo 4-6 horas. Sustrato: 3 tazas tierra + 1 taza perlita. Fertilizante triple 15: 1g/litro cada 21 días. Tóxico para gatos.' },
+  'Malamadre':        { tipo:'Interior', riego:7,  fert:30, emoji:'🌿', notas:'Luz indirecta o sombra. Sustrato: 2 tazas tierra + 1 taza perlita. Fertilizante triple 15: 0.5g/litro cada 30 días. Ideal colgante, muy resistente.' },
+  'Margarita':        { tipo:'Exterior', riego:3,  fert:14, emoji:'🌼', notas:'Sol directo mínimo 6 horas. Sustrato: 2 tazas tierra + 1 taza perlita. Fertilizante triple 15: 1g/litro cada 14 días. Cortar flores marchitas para más brotes.' },
+  'Menta':            { tipo:'Aromática', riego:3,  fert:21, emoji:'🌿', notas:'Sol directo o semisombra. Sustrato: 2 tazas tierra + 0.5 taza perlita. Fertilizante triple 15: 0.5g/litro cada 21 días. Invasiva, mejor en maceta sola.' },
+  'Monstera':         { tipo:'Interior', riego:7,  fert:30, emoji:'🌿', notas:'Luz indirecta brillante. Sustrato: 3 tazas tierra negra + 1 taza perlita + 0.5 taza corteza. Fertilizante triple 15: 1.5g/litro cada 30 días. Limpiar hojas mensualmente.' },
+  'Orquídea':         { tipo:'Interior', riego:7,  fert:14, emoji:'🪷', notas:'Luz indirecta brillante, sin sol directo. Sustrato: 3 tazas corteza de pino mediana. Fertilizante orquídeas (triple 15 muy diluido): 0.3g/litro cada 14 días. Regar solo cuando la corteza esté seca.' },
+  'Palmera':          { tipo:'Interior', riego:7,  fert:30, emoji:'🌴', notas:'Luz brillante indirecta o sol suave. Sustrato: 3 tazas tierra + 1 taza perlita + 0.5 taza arena. Fertilizante triple 15: 1g/litro cada 30 días. No cortar hojas verdes.' },
+  'Peperomia':        { tipo:'Interior', riego:10, fert:30, emoji:'🌿', notas:'Luz indirecta media. Sustrato: 2 tazas tierra + 1 taza perlita. Fertilizante triple 15: 0.5g/litro cada 30 días. Tolera olvidos de riego, ideal principiantes.' },
+  'Pilea':            { tipo:'Interior', riego:7,  fert:21, emoji:'🌿', notas:'Luz indirecta brillante. Sustrato: 2 tazas tierra + 1 taza perlita. Fertilizante triple 15: 0.5g/litro cada 21 días. Rotar maceta para crecimiento parejo.' },
+  'Pothos':           { tipo:'Interior', riego:7,  fert:30, emoji:'🌿', notas:'Luz indirecta baja o media. Sustrato: 2 tazas tierra + 1 taza perlita. Fertilizante triple 15: 1g/litro cada 30 días. Purifica el aire, muy resistente.' },
+  'Rosa':             { tipo:'Exterior', riego:3,  fert:14, emoji:'🌹', notas:'Sol directo mínimo 6 horas. Sustrato: 3 tazas tierra + 1 taza compost + 0.5 taza perlita. Fertilizante triple 15: 1.5g/litro cada 14 días. Podar en ángulo 45°.' },
+  'Romero':           { tipo:'Exterior', riego:7,  fert:30, emoji:'🌿', notas:'Sol directo mínimo 6 horas. Sustrato: 2 tazas tierra + 2 tazas arena gruesa. Fertilizante triple 15: 0.5g/litro cada 30 días. Tolera sequía, odia exceso de agua.' },
+  'Sansevieria':      { tipo:'Interior', riego:14, fert:45, emoji:'🌿', notas:'Luz baja a brillante, muy adaptable. Sustrato: 2 tazas tierra cactus + 1 taza perlita. Fertilizante triple 15: 0.5g/litro cada 45 días. La planta más resistente al abandono.' },
+  'Suculenta':        { tipo:'Suculenta/Cactus', riego:14, fert:45, emoji:'🪴', notas:'Sol directo 4-6 horas mínimo. Sustrato: 1.5 tazas tierra + 1.5 tazas arena gruesa + 0.5 taza perlita. Fertilizante triple 15: 0.5g/litro cada 45 días. Solo en temporada cálida.' },
+  'Tomate':           { tipo:'Frutal', riego:2,  fert:14, emoji:'🍅', notas:'Sol directo mínimo 8 horas. Sustrato: 3 tazas tierra negra + 1 taza compost + 0.5 taza perlita. Fertilizante triple 15: 1.5g/litro cada 14 días, cambiar a potasio al florecer.' },
+  'Violeta Africana': { tipo:'Interior', riego:5,  fert:14, emoji:'💜', notas:'Luz indirecta brillante. Sustrato: 2 tazas tierra negra muy fina + 0.5 taza perlita. Fertilizante violetas (triple 15): 0.5g/litro cada 14 días. No mojar hojas ni flores.' },
+  'Yuca':             { tipo:'Interior', riego:10, fert:30, emoji:'🌿', notas:'Luz solar directa o muy brillante. Sustrato: 2 tazas tierra + 1 taza arena + 0.5 taza perlita. Fertilizante triple 15: 1g/litro cada 30 días. Tolera sequía.' },
+  'Zamioculca':       { tipo:'Interior', riego:14, fert:45, emoji:'🌿', notas:'Luz baja a media indirecta. Sustrato: 2 tazas tierra + 1 taza perlita. Fertilizante triple 15: 0.5g/litro cada 45 días. La más resistente al olvido. Tóxica para mascotas.' },
+  'Bambú':            { tipo:'Exterior', riego:5,  fert:21, emoji:'🎋', notas:'Sol directo o semisombra. Sustrato: 3 tazas tierra + 1 taza compost. Fertilizante triple 15: 1.5g/litro cada 21 días. Crece rápido, controlar expansión.' },
+  'Cala':             { tipo:'Exterior', riego:4,  fert:21, emoji:'🌸', notas:'Sol de mañana o luz indirecta brillante. Sustrato: 3 tazas tierra negra + 1 taza perlita. Fertilizante triple 15: 1g/litro cada 21 días. Tóxica para mascotas.' },
+  'Girasol':          { tipo:'Exterior', riego:3,  fert:14, emoji:'🌻', notas:'Sol directo mínimo 8 horas. Sustrato: 3 tazas tierra + 1 taza compost. Fertilizante triple 15: 1.5g/litro cada 14 días. Orientar hacia el sur.' },
+  'Limonero':         { tipo:'Frutal', riego:4,  fert:21, emoji:'🍋', notas:'Sol directo mínimo 8 horas. Sustrato: 3 tazas tierra + 1 taza perlita + 0.5 taza arena. Fertilizante cítricos (triple 15): 1.5g/litro cada 21 días. pH 6-7.' },
+  'Maranta':          { tipo:'Interior', riego:5,  fert:21, emoji:'🌿', notas:'Luz indirecta baja a media. Sustrato: 2 tazas tierra negra + 1 taza perlita. Fertilizante triple 15: 0.5g/litro cada 21 días. Agua sin cloro, alta humedad.' },
+  'Perejil':          { tipo:'Aromática', riego:3,  fert:21, emoji:'🌿', notas:'Sol directo 4-6 horas. Sustrato: 2 tazas tierra + 0.5 taza perlita. Fertilizante triple 15: 0.5g/litro cada 21 días. Cosechar de afuera hacia adentro.' },
+  'Salvia':           { tipo:'Aromática', riego:5,  fert:30, emoji:'🌿', notas:'Sol directo mínimo 6 horas. Sustrato: 2 tazas tierra + 1 taza arena. Fertilizante triple 15: 0.5g/litro cada 30 días. Podar para que no lignifique.' },
+  'Tomillo':          { tipo:'Aromática', riego:7,  fert:30, emoji:'🌿', notas:'Sol directo mínimo 6 horas. Sustrato: 2 tazas tierra + 1 taza arena gruesa. Fertilizante triple 15: 0.5g/litro cada 30 días. Muy tolera sequía y calor.' },
+};
+
+const PLANTAS_COMUNES = Object.keys(PLANTAS_DB);
 
 let sugerenciaActiva = -1;
 let sugerenciasFiltradas = [];
+
+function rellenarCamposPlanta(nombre) {
+  const datos = PLANTAS_DB[nombre];
+  if (!datos) return;
+  document.getElementById('f-nombre').value = nombre;
+  document.getElementById('f-tipo').value = datos.tipo;
+  document.getElementById('f-riego').value = datos.riego;
+  document.getElementById('f-fertilizacion').value = datos.fert;
+  document.getElementById('f-notas').value = datos.notas;
+  // Seleccionar emoji
+  selectedEmoji = datos.emoji;
+  buildEmojiPicker();
+}
 
 function filtrarSugerencias(valor) {
   const lista = document.getElementById('sugerencias-lista');
@@ -1568,14 +1619,15 @@ function filtrarSugerencias(valor) {
   sugerenciasFiltradas = PLANTAS_COMUNES.filter(p => p.toLowerCase().includes(v)).slice(0, 8);
   if (sugerenciasFiltradas.length === 0) { lista.classList.remove('open'); return; }
   lista.innerHTML = sugerenciasFiltradas.map((p, i) => {
+    const d = PLANTAS_DB[p];
     const highlighted = p.replace(new RegExp(`(${valor})`, 'gi'), '<span class="sugerencia-match">$1</span>');
-    return `<div class="sugerencia-item" data-i="${i}" onmousedown="elegirSugerencia(${i})">${highlighted}</div>`;
+    return `<div class="sugerencia-item" data-i="${i}" onmousedown="elegirSugerencia(${i})">${d.emoji} ${highlighted} <span style="font-size:0.72rem;color:var(--texto-suave);margin-left:4px">${d.tipo} · c/${d.riego}d</span></div>`;
   }).join('');
   lista.classList.add('open');
 }
 
 function elegirSugerencia(i) {
-  document.getElementById('f-nombre').value = sugerenciasFiltradas[i];
+  rellenarCamposPlanta(sugerenciasFiltradas[i]);
   document.getElementById('sugerencias-lista').classList.remove('open');
 }
 
@@ -1620,16 +1672,19 @@ async function identificarPlanta() {
           contents: [{
             parts: [
               { inline_data: { mime_type: mimeType, data: base64Data } },
-              { text: `Identifica esta planta. Responde en español con este formato exacto:
-NOMBRE: [nombre común]
-TIPO: [Interior/Exterior/Suculenta/Cactus/Flor/Frutal/Aromática]
-RIEGO: [cada cuántos días, solo el número]
-FERTILIZACIÓN: [cada cuántos días, solo el número]
-CUIDADO: [1 consejo corto]
-Si no es una planta, responde solo: NO_ES_PLANTA` }
+              { text: `Identifica esta planta con precisión. Responde ÚNICAMENTE en este formato, una línea por campo, sin texto adicional:
+NOMBRE: [nombre común en español]
+TIPO: [exactamente uno de: Interior / Exterior / Suculenta/Cactus / Flor / Frutal / Aromática]
+RIEGO: [número entero de días entre riegos]
+FERTILIZACION: [número entero de días entre fertilizaciones]
+LUZ: [descripción corta de necesidad de luz]
+SUSTRATO: [mezcla en tazas, ej: 2 tazas tierra + 1 taza perlita]
+FERTILIZANTE: [dosis triple 15 en g/litro y frecuencia]
+NOTAS: [2-3 datos importantes de cuidado]
+Si no es una planta escribe solo: NO_ES_PLANTA` }
             ]
           }],
-          generationConfig: { maxOutputTokens: 300 }
+          generationConfig: { maxOutputTokens: 500, temperature: 0.2 }
         })
       }
     );
@@ -1637,32 +1692,58 @@ Si no es una planta, responde solo: NO_ES_PLANTA` }
     const data = await res.json();
     const texto = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
-    if (texto.includes('NO_ES_PLANTA')) {
-      resultado.innerHTML = '⚠️ No pude identificar una planta en la imagen. Intenta con otra foto con mejor luz.';
+    if (!texto || texto.includes('NO_ES_PLANTA')) {
+      resultado.innerHTML = '⚠️ No pude identificar una planta. Intenta con otra foto con mejor luz y enfoque.';
     } else {
-      // Parsear respuesta y autorellenar el formulario
-      const lineas = texto.split('\n');
-      const get = (key) => { const l = lineas.find(l => l.startsWith(key)); return l ? l.split(':')[1]?.trim() : ''; };
-      const nombre = get('NOMBRE');
-      const tipo = get('TIPO');
-      const riego = parseInt(get('RIEGO')) || 7;
-      const fert = parseInt(get('FERTILIZACIÓN')) || 30;
-      const cuidado = get('CUIDADO');
+      // Parser robusto: busca cada clave en cualquier línea
+      const getVal = (key) => {
+        const regex = new RegExp(`^${key}\\s*:\\s*(.+)`, 'im');
+        const match = texto.match(regex);
+        return match ? match[1].trim() : '';
+      };
 
-      // Autorellenar campos
+      const nombre     = getVal('NOMBRE');
+      const tipo       = getVal('TIPO');
+      const riego      = parseInt(getVal('RIEGO')) || 7;
+      const fert       = parseInt(getVal('FERTILIZACION')) || 30;
+      const luz        = getVal('LUZ');
+      const sustrato   = getVal('SUSTRATO');
+      const fertilizante = getVal('FERTILIZANTE');
+      const notasIA    = getVal('NOTAS');
+
+      // Construir notas completas
+      const notasCompletas = [
+        luz        ? `☀️ Luz: ${luz}` : '',
+        sustrato   ? `🪴 Sustrato: ${sustrato}` : '',
+        fertilizante ? `🌱 Fertilizante: ${fertilizante}` : '',
+        notasIA    ? `📝 ${notasIA}` : '',
+      ].filter(Boolean).join('. ');
+
+      // Rellenar campos
       if (nombre) document.getElementById('f-nombre').value = nombre;
       if (tipo) {
         const sel = document.getElementById('f-tipo');
-        [...sel.options].forEach(o => { if (o.value.toLowerCase().includes(tipo.toLowerCase()) || tipo.toLowerCase().includes(o.value.toLowerCase())) sel.value = o.value; });
+        const match = [...sel.options].find(o =>
+          o.value.toLowerCase().replace('/','').includes(tipo.toLowerCase().replace('/','').substring(0,5)) ||
+          tipo.toLowerCase().includes(o.value.toLowerCase().substring(0,5))
+        );
+        if (match) sel.value = match.value;
       }
-      if (riego) document.getElementById('f-riego').value = riego;
-      if (fert) document.getElementById('f-fertilizacion').value = fert;
-      if (cuidado) document.getElementById('f-notas').value = cuidado;
+      document.getElementById('f-riego').value = riego;
+      document.getElementById('f-fertilizacion').value = fert;
+      if (notasCompletas) document.getElementById('f-notas').value = notasCompletas;
 
-      resultado.innerHTML = `<strong>🌿 ${nombre}</strong>${cuidado ? `<span>${cuidado}</span>` : ''}<span style="color:var(--verde-medio);font-size:0.78rem;margin-top:4px;display:block">✅ Campos rellenados automáticamente</span>`;
+      // Si está en nuestra DB local, usar esos datos también
+      if (nombre && PLANTAS_DB[nombre]) rellenarCamposPlanta(nombre);
+
+      resultado.innerHTML = `
+        <strong>🌿 ${nombre || 'Planta identificada'}</strong>
+        <span style="display:block;font-size:0.78rem;color:var(--texto-suave);margin:2px 0">${tipo} · Riego cada ${riego} días</span>
+        <span style="color:var(--verde-medio);font-size:0.78rem;margin-top:6px;display:block">✅ Todos los campos rellenados automáticamente</span>`;
     }
   } catch(e) {
-    resultado.innerHTML = '⚠️ Error al identificar. Verifica tu API key y conexión.';
+    console.error(e);
+    resultado.innerHTML = '⚠️ Error al identificar. Verifica tu API key y conexión a internet.';
   }
 
   btn.disabled = false;
