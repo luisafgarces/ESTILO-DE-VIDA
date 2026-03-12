@@ -747,6 +747,8 @@
   /* ── FIREBASE BANNER ── */
   .btn-icon.diagnostico { background: #fef9c3; color: #b45309; }
   .btn-icon.diagnostico:hover { background: #b45309; color: white; }
+  .btn-icon.trasplante-btn { background: #e8f5e9; color: #2d6a3f; }
+  .btn-icon.trasplante-btn:hover { background: #2d6a3f; color: white; }
 
   .diagnostico-card {
     background: var(--blanco);
@@ -1013,6 +1015,60 @@
 
 </div><!-- /app-content -->
 
+<!-- ══ MODAL TRASPLANTE ══ -->
+<div class="form-overlay" id="trasplante-overlay">
+  <div class="form-card" style="max-width:480px">
+    <div class="form-header">
+      <h2>🪴 Guía de Trasplante</h2>
+      <button class="close-btn" onclick="document.getElementById('trasplante-overlay').classList.remove('open')">✕</button>
+    </div>
+    <p id="trasplante-nombre-planta" style="font-size:0.85rem;color:var(--texto-suave);margin-bottom:16px;"></p>
+
+    <!-- Info de la DB -->
+    <div id="trasplante-db-info" style="display:none;background:var(--crema);border-radius:12px;padding:16px;margin-bottom:16px;border-left:4px solid var(--verde-medio)">
+      <div style="font-size:0.72rem;font-weight:700;color:var(--verde-medio);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">📋 Guía específica para esta planta</div>
+      <p id="trasplante-db-texto" style="font-size:0.88rem;color:var(--texto);line-height:1.6"></p>
+    </div>
+
+    <!-- Señales de que necesita trasplante -->
+    <div style="background:#f0fdf4;border-radius:12px;padding:16px;margin-bottom:16px">
+      <div style="font-size:0.72rem;font-weight:700;color:#166534;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:10px">🔍 Señales de que necesita trasplante</div>
+      <div style="font-size:0.85rem;color:var(--texto);line-height:1.8">
+        🌱 Raíces saliendo por los huecos de drenaje<br>
+        💧 El agua atraviesa muy rápido sin humedecer<br>
+        📉 Crece muy lento aunque la cuidas bien<br>
+        🪨 La tierra se separa de los bordes<br>
+        🌿 Las hojas se caen o se ven pálidas sin razón
+      </div>
+    </div>
+
+    <!-- Pasos generales -->
+    <div style="background:#fffbeb;border-radius:12px;padding:16px;margin-bottom:16px">
+      <div style="font-size:0.72rem;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:10px">📝 Cómo hacerlo paso a paso</div>
+      <div style="font-size:0.85rem;color:var(--texto);line-height:1.9">
+        <b>1.</b> Riega 1-2 días antes (tierra húmeda = raíces fáciles de sacar)<br>
+        <b>2.</b> Nueva maceta: máximo 3-5cm más grande que la actual<br>
+        <b>3.</b> Pon una capa de sustrato fresco en el fondo<br>
+        <b>4.</b> Saca la planta suavemente, sacude tierra vieja<br>
+        <b>5.</b> Recorta raíces negras o podridas con tijeras limpias<br>
+        <b>6.</b> Coloca y rellena con sustrato nuevo alrededor<br>
+        <b>7.</b> Riega bien y pon en sombra 1-2 semanas para recuperarse
+      </div>
+    </div>
+
+    <!-- Tip post-trasplante -->
+    <div style="background:#fef2f2;border-radius:12px;padding:14px;font-size:0.83rem;color:#991b1b;line-height:1.6">
+      ⚠️ <b>Post-trasplante:</b> No fertilices en las primeras 4-6 semanas. Es normal que pierda algunas hojas — es estrés temporal. El sustrato fresco ya tiene nutrientes suficientes.
+    </div>
+
+    <!-- Botón pedir consejo IA -->
+    <button onclick="pedirConsejoTrasplanteIA()" id="btn-trasplante-ia" style="width:100%;margin-top:16px;padding:12px;background:var(--verde-medio);color:white;border:none;border-radius:12px;font-family:'Lato',sans-serif;font-size:0.9rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
+      ✨ Pedir consejo personalizado con IA
+    </button>
+    <div id="trasplante-ia-resultado" style="display:none;margin-top:14px;background:var(--crema);border-radius:12px;padding:14px;font-size:0.85rem;color:var(--texto);line-height:1.7"></div>
+  </div>
+</div>
+
 <!-- ── FIREBASE BANNER ── -->
 <div id="firebase-banner">
   <strong>⚠️ Firebase no configurado — modo local activo</strong>
@@ -1223,7 +1279,8 @@ function renderPlantas() {
         </div>
         <div class="plant-actions">
           <button class="btn-icon agua" onclick="riegoRapido(${i})" title="Regar ahora">💧</button>
-          <button class="btn-icon diagnostico" onclick="abrirDiagnostico(${i})" title="Diagnóstico">🩺</button>
+          <button class="btn-icon trasplante-btn" onclick="abrirTrasplante(${i})" title="Guía de trasplante">🪴</button>
+          <button class="btn-icon diagnostico" onclick="abrirDiagnostico(${i})" title="Diagnóstico IA">🩺</button>
           <button class="btn-icon delete" onclick="eliminarPlanta(${i})" title="Eliminar">🗑️</button>
         </div>
       </div>
@@ -1231,9 +1288,70 @@ function renderPlantas() {
   }).join('');
 }
 
+
 // ════════════════════════════════
-//  RECORDATORIOS
+//  TRASPLANTE
 // ════════════════════════════════
+function abrirTrasplante(i) {
+  const p = plantas[i];
+  document.getElementById('trasplante-overlay').classList.add('open');
+  document.getElementById('trasplante-nombre-planta').textContent = `🌿 ${p.nombre} · ${p.tipo}`;
+  document.getElementById('trasplante-ia-resultado').style.display = 'none';
+  document.getElementById('btn-trasplante-ia').textContent = '✨ Pedir consejo personalizado con IA';
+  document.getElementById('btn-trasplante-ia').disabled = false;
+  document.getElementById('btn-trasplante-ia')._plantaIdx = i;
+
+  // Buscar en DB por nombre
+  const db = PLANTAS_DB[p.nombre];
+  const dbInfo = document.getElementById('trasplante-db-info');
+  if (db && db.trasplante) {
+    document.getElementById('trasplante-db-texto').textContent = db.trasplante;
+    dbInfo.style.display = 'block';
+  } else {
+    dbInfo.style.display = 'none';
+  }
+}
+
+async function pedirConsejoTrasplanteIA() {
+  const btn = document.getElementById('btn-trasplante-ia');
+  const resultado = document.getElementById('trasplante-ia-resultado');
+  const i = btn._plantaIdx;
+  const p = plantas[i];
+
+  btn.disabled = true;
+  btn.textContent = '✨ Consultando IA...';
+  resultado.style.display = 'block';
+  resultado.innerHTML = '<div class="typing-dots"><span></span><span></span><span></span></div>';
+
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text:
+            `Soy jardinera y tengo un/una ${p.nombre} (tipo: ${p.tipo}). 
+            ${p.notas ? 'Notas de cuidado: ' + p.notas : ''}
+            Dame un consejo corto, práctico y cálido sobre cuándo y cómo trasplantarla. 
+            Máximo 4 oraciones. En español. Sin listas, solo texto fluido.`
+          }] }],
+          generationConfig: { maxOutputTokens: 200, temperature: 0.7 }
+        })
+      }
+    );
+    const data = await res.json();
+    const texto = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    resultado.innerHTML = texto ? `🤖 ${texto}` : '⚠️ No pude obtener respuesta.';
+  } catch(e) {
+    resultado.innerHTML = '⚠️ Error de conexión.';
+  }
+
+  btn.disabled = false;
+  btn.textContent = '✨ Pedir otro consejo';
+}
+
+
 function renderRecordatorios() {
   const lista = document.getElementById('recordatorios-lista');
   const sel = document.getElementById('select-regar');
@@ -1574,57 +1692,58 @@ Sé específico, práctico y cálido. Si la planta se ve sana, dilo con entusias
 
 
 const PLANTAS_DB = {
-  'Albahaca':         { tipo:'Aromática', riego:3,  fert:20, emoji:'🌿', notas:'Luz solar directa mínimo 6 horas. Sustrato: 2 tazas tierra + 1 taza perlita. Fertilizante triple 15: 1g/litro cada 20 días. Cortar flores para que dure más.' },
-  'Aloe Vera':        { tipo:'Suculenta/Cactus', riego:14, fert:45, emoji:'🌵', notas:'Luz solar directa 4-6 horas. Sustrato: 2 tazas tierra cactus + 1 taza arena gruesa. Fertilizante triple 15: 0.5g/litro cada 45 días. No mojar las hojas.' },
-  'Anturio':          { tipo:'Interior', riego:7,  fert:30, emoji:'🌺', notas:'Luz indirecta brillante. Sustrato: 2 tazas tierra negra + 1 taza corteza de pino. Fertilizante triple 15: 1g/litro cada 30 días. Alta humedad, pulveriza hojas.' },
-  'Areca':            { tipo:'Interior', riego:7,  fert:30, emoji:'🌴', notas:'Luz indirecta o sol suave. Sustrato: 3 tazas tierra + 1 taza perlita. Fertilizante triple 15: 1g/litro cada 30 días. Sensible a agua con cloro.' },
-  'Begonia':          { tipo:'Interior', riego:5,  fert:21, emoji:'🌸', notas:'Luz indirecta brillante. Sustrato: 2 tazas tierra + 0.5 taza perlita. Fertilizante triple 15: 1g/litro cada 21 días. Evitar mojar flores.' },
-  'Bromelia':         { tipo:'Interior', riego:7,  fert:30, emoji:'🌺', notas:'Luz indirecta. Sustrato: 2 tazas tierra orquídeas + 1 taza corteza. Fertilizante foliar triple 15: 0.5g/litro cada 30 días. Llenar el centro con agua.' },
-  'Cactus':           { tipo:'Suculenta/Cactus', riego:21, fert:60, emoji:'🌵', notas:'Pleno sol mínimo 6 horas. Sustrato: 1 taza tierra + 2 tazas arena gruesa + 0.5 taza perlita. Fertilizante triple 15: 0.5g/litro cada 60 días. Solo en verano.' },
-  'Calathea':         { tipo:'Interior', riego:5,  fert:21, emoji:'🌿', notas:'Luz indirecta media. Sustrato: 2 tazas tierra negra + 1 taza perlita + 0.5 taza carbón. Fertilizante triple 15: 0.5g/litro cada 21 días. Agua sin cloro, alta humedad.' },
-  'Camelia':          { tipo:'Exterior', riego:5,  fert:30, emoji:'🌸', notas:'Sol de mañana, sombra de tarde. Sustrato: 3 tazas tierra ácida + 1 taza perlita. Fertilizante para acidófilas: 1g/litro cada 30 días. pH 5.5-6.5.' },
-  'Cinta':            { tipo:'Interior', riego:7,  fert:30, emoji:'🌿', notas:'Luz indirecta o sombra. Sustrato: 2 tazas tierra + 1 taza perlita. Fertilizante triple 15: 1g/litro cada 30 días. Muy resistente, ideal principiantes.' },
-  'Costilla de Adán': { tipo:'Interior', riego:7,  fert:30, emoji:'🌿', notas:'Luz indirecta brillante. Sustrato: 3 tazas tierra negra + 1 taza perlita + 0.5 taza corteza. Fertilizante triple 15: 1.5g/litro cada 30 días. Limpiar hojas con trapo húmedo.' },
-  'Croton':           { tipo:'Interior', riego:5,  fert:21, emoji:'🍁', notas:'Luz solar directa suave o indirecta brillante. Sustrato: 2 tazas tierra + 1 taza perlita. Fertilizante triple 15: 1g/litro cada 21 días. Más luz = más color en hojas.' },
-  'Dracena':          { tipo:'Interior', riego:10, fert:30, emoji:'🌿', notas:'Luz indirecta media. Sustrato: 3 tazas tierra + 1 taza perlita. Fertilizante triple 15: 1g/litro cada 30 días. Sensible a flúor, usar agua filtrada.' },
-  'Espatifilo':       { tipo:'Interior', riego:5,  fert:21, emoji:'🌸', notas:'Sombra o luz indirecta baja. Sustrato: 2 tazas tierra negra + 1 taza perlita. Fertilizante triple 15: 0.5g/litro cada 21 días. Hojas caídas = sed.' },
-  'Ficus':            { tipo:'Interior', riego:7,  fert:30, emoji:'🌳', notas:'Luz indirecta brillante, sin corrientes de aire. Sustrato: 3 tazas tierra + 1 taza perlita. Fertilizante triple 15: 1g/litro cada 30 días. No mover de lugar.' },
-  'Filodendro':       { tipo:'Interior', riego:7,  fert:21, emoji:'🌿', notas:'Luz indirecta media o baja. Sustrato: 2 tazas tierra + 1 taza perlita + 0.5 taza carbón. Fertilizante triple 15: 1g/litro cada 21 días. Tóxica para mascotas.' },
-  'Gardenia':         { tipo:'Interior', riego:5,  fert:21, emoji:'🌸', notas:'Luz solar indirecta brillante. Sustrato: 3 tazas tierra ácida + 1 taza perlita. Fertilizante acidófilas: 1g/litro cada 21 días. Alta humedad, pH 5-6.' },
-  'Geranio':          { tipo:'Exterior', riego:4,  fert:21, emoji:'🌸', notas:'Sol directo mínimo 6 horas. Sustrato: 2 tazas tierra + 1 taza perlita + 0.5 taza arena. Fertilizante triple 15: 1g/litro cada 21 días. Podar flores secas.' },
-  'Helécho':          { tipo:'Interior', riego:3,  fert:21, emoji:'🌿', notas:'Luz indirecta o sombra. Sustrato: 2 tazas tierra negra + 1 taza perlita + 1 taza musgo. Fertilizante triple 15: 0.5g/litro cada 21 días. Humedad muy alta.' },
-  'Hibisco':          { tipo:'Exterior', riego:3,  fert:14, emoji:'🌺', notas:'Sol directo mínimo 6 horas. Sustrato: 3 tazas tierra + 1 taza compost. Fertilizante triple 15: 1.5g/litro cada 14 días. Poda leve para más flores.' },
-  'Hiedra':           { tipo:'Interior', riego:7,  fert:30, emoji:'🌿', notas:'Luz indirecta o sombra. Sustrato: 2 tazas tierra + 1 taza perlita. Fertilizante triple 15: 0.5g/litro cada 30 días. Tóxica, usar guantes al manipular.' },
-  'Hortensia':        { tipo:'Exterior', riego:3,  fert:21, emoji:'💐', notas:'Sol de mañana, sombra de tarde. Sustrato: 3 tazas tierra ácida + 1 taza perlita. Fertilizante acidófilas: 1g/litro cada 21 días. El pH define el color.' },
-  'Jazmín':           { tipo:'Exterior', riego:4,  fert:21, emoji:'🌸', notas:'Sol directo o semisombra. Sustrato: 3 tazas tierra + 0.5 taza perlita. Fertilizante triple 15: 1g/litro cada 21 días. Podar después de florecer.' },
-  'Lavanda':          { tipo:'Exterior', riego:7,  fert:30, emoji:'💜', notas:'Sol directo mínimo 8 horas. Sustrato: 2 tazas tierra + 2 tazas arena gruesa. Fertilizante triple 15: 0.5g/litro cada 30 días. Tolera sequía, odia encharcamiento.' },
-  'Lirio':            { tipo:'Exterior', riego:5,  fert:21, emoji:'🌸', notas:'Sol directo 4-6 horas. Sustrato: 3 tazas tierra + 1 taza perlita. Fertilizante triple 15: 1g/litro cada 21 días. Tóxico para gatos.' },
-  'Malamadre':        { tipo:'Interior', riego:7,  fert:30, emoji:'🌿', notas:'Luz indirecta o sombra. Sustrato: 2 tazas tierra + 1 taza perlita. Fertilizante triple 15: 0.5g/litro cada 30 días. Ideal colgante, muy resistente.' },
-  'Margarita':        { tipo:'Exterior', riego:3,  fert:14, emoji:'🌼', notas:'Sol directo mínimo 6 horas. Sustrato: 2 tazas tierra + 1 taza perlita. Fertilizante triple 15: 1g/litro cada 14 días. Cortar flores marchitas para más brotes.' },
-  'Menta':            { tipo:'Aromática', riego:3,  fert:21, emoji:'🌿', notas:'Sol directo o semisombra. Sustrato: 2 tazas tierra + 0.5 taza perlita. Fertilizante triple 15: 0.5g/litro cada 21 días. Invasiva, mejor en maceta sola.' },
-  'Monstera':         { tipo:'Interior', riego:7,  fert:30, emoji:'🌿', notas:'Luz indirecta brillante. Sustrato: 3 tazas tierra negra + 1 taza perlita + 0.5 taza corteza. Fertilizante triple 15: 1.5g/litro cada 30 días. Limpiar hojas mensualmente.' },
-  'Orquídea':         { tipo:'Interior', riego:7,  fert:14, emoji:'🪷', notas:'Luz indirecta brillante, sin sol directo. Sustrato: 3 tazas corteza de pino mediana. Fertilizante orquídeas (triple 15 muy diluido): 0.3g/litro cada 14 días. Regar solo cuando la corteza esté seca.' },
-  'Palmera':          { tipo:'Interior', riego:7,  fert:30, emoji:'🌴', notas:'Luz brillante indirecta o sol suave. Sustrato: 3 tazas tierra + 1 taza perlita + 0.5 taza arena. Fertilizante triple 15: 1g/litro cada 30 días. No cortar hojas verdes.' },
-  'Peperomia':        { tipo:'Interior', riego:10, fert:30, emoji:'🌿', notas:'Luz indirecta media. Sustrato: 2 tazas tierra + 1 taza perlita. Fertilizante triple 15: 0.5g/litro cada 30 días. Tolera olvidos de riego, ideal principiantes.' },
-  'Pilea':            { tipo:'Interior', riego:7,  fert:21, emoji:'🌿', notas:'Luz indirecta brillante. Sustrato: 2 tazas tierra + 1 taza perlita. Fertilizante triple 15: 0.5g/litro cada 21 días. Rotar maceta para crecimiento parejo.' },
-  'Pothos':           { tipo:'Interior', riego:7,  fert:30, emoji:'🌿', notas:'Luz indirecta baja o media. Sustrato: 2 tazas tierra + 1 taza perlita. Fertilizante triple 15: 1g/litro cada 30 días. Purifica el aire, muy resistente.' },
-  'Rosa':             { tipo:'Exterior', riego:3,  fert:14, emoji:'🌹', notas:'Sol directo mínimo 6 horas. Sustrato: 3 tazas tierra + 1 taza compost + 0.5 taza perlita. Fertilizante triple 15: 1.5g/litro cada 14 días. Podar en ángulo 45°.' },
-  'Romero':           { tipo:'Exterior', riego:7,  fert:30, emoji:'🌿', notas:'Sol directo mínimo 6 horas. Sustrato: 2 tazas tierra + 2 tazas arena gruesa. Fertilizante triple 15: 0.5g/litro cada 30 días. Tolera sequía, odia exceso de agua.' },
-  'Sansevieria':      { tipo:'Interior', riego:14, fert:45, emoji:'🌿', notas:'Luz baja a brillante, muy adaptable. Sustrato: 2 tazas tierra cactus + 1 taza perlita. Fertilizante triple 15: 0.5g/litro cada 45 días. La planta más resistente al abandono.' },
-  'Suculenta':        { tipo:'Suculenta/Cactus', riego:14, fert:45, emoji:'🪴', notas:'Sol directo 4-6 horas mínimo. Sustrato: 1.5 tazas tierra + 1.5 tazas arena gruesa + 0.5 taza perlita. Fertilizante triple 15: 0.5g/litro cada 45 días. Solo en temporada cálida.' },
-  'Tomate':           { tipo:'Frutal', riego:2,  fert:14, emoji:'🍅', notas:'Sol directo mínimo 8 horas. Sustrato: 3 tazas tierra negra + 1 taza compost + 0.5 taza perlita. Fertilizante triple 15: 1.5g/litro cada 14 días, cambiar a potasio al florecer.' },
-  'Violeta Africana': { tipo:'Interior', riego:5,  fert:14, emoji:'💜', notas:'Luz indirecta brillante. Sustrato: 2 tazas tierra negra muy fina + 0.5 taza perlita. Fertilizante violetas (triple 15): 0.5g/litro cada 14 días. No mojar hojas ni flores.' },
-  'Yuca':             { tipo:'Interior', riego:10, fert:30, emoji:'🌿', notas:'Luz solar directa o muy brillante. Sustrato: 2 tazas tierra + 1 taza arena + 0.5 taza perlita. Fertilizante triple 15: 1g/litro cada 30 días. Tolera sequía.' },
-  'Zamioculca':       { tipo:'Interior', riego:14, fert:45, emoji:'🌿', notas:'Luz baja a media indirecta. Sustrato: 2 tazas tierra + 1 taza perlita. Fertilizante triple 15: 0.5g/litro cada 45 días. La más resistente al olvido. Tóxica para mascotas.' },
-  'Bambú':            { tipo:'Exterior', riego:5,  fert:21, emoji:'🎋', notas:'Sol directo o semisombra. Sustrato: 3 tazas tierra + 1 taza compost. Fertilizante triple 15: 1.5g/litro cada 21 días. Crece rápido, controlar expansión.' },
-  'Cala':             { tipo:'Exterior', riego:4,  fert:21, emoji:'🌸', notas:'Sol de mañana o luz indirecta brillante. Sustrato: 3 tazas tierra negra + 1 taza perlita. Fertilizante triple 15: 1g/litro cada 21 días. Tóxica para mascotas.' },
-  'Girasol':          { tipo:'Exterior', riego:3,  fert:14, emoji:'🌻', notas:'Sol directo mínimo 8 horas. Sustrato: 3 tazas tierra + 1 taza compost. Fertilizante triple 15: 1.5g/litro cada 14 días. Orientar hacia el sur.' },
-  'Limonero':         { tipo:'Frutal', riego:4,  fert:21, emoji:'🍋', notas:'Sol directo mínimo 8 horas. Sustrato: 3 tazas tierra + 1 taza perlita + 0.5 taza arena. Fertilizante cítricos (triple 15): 1.5g/litro cada 21 días. pH 6-7.' },
-  'Maranta':          { tipo:'Interior', riego:5,  fert:21, emoji:'🌿', notas:'Luz indirecta baja a media. Sustrato: 2 tazas tierra negra + 1 taza perlita. Fertilizante triple 15: 0.5g/litro cada 21 días. Agua sin cloro, alta humedad.' },
-  'Perejil':          { tipo:'Aromática', riego:3,  fert:21, emoji:'🌿', notas:'Sol directo 4-6 horas. Sustrato: 2 tazas tierra + 0.5 taza perlita. Fertilizante triple 15: 0.5g/litro cada 21 días. Cosechar de afuera hacia adentro.' },
-  'Salvia':           { tipo:'Aromática', riego:5,  fert:30, emoji:'🌿', notas:'Sol directo mínimo 6 horas. Sustrato: 2 tazas tierra + 1 taza arena. Fertilizante triple 15: 0.5g/litro cada 30 días. Podar para que no lignifique.' },
-  'Tomillo':          { tipo:'Aromática', riego:7,  fert:30, emoji:'🌿', notas:'Sol directo mínimo 6 horas. Sustrato: 2 tazas tierra + 1 taza arena gruesa. Fertilizante triple 15: 0.5g/litro cada 30 días. Muy tolera sequía y calor.' },
+  'Albahaca':         { tipo:'Aromática',      riego:3,  fert:20, emoji:'🌿', trasplante:'Cada año en primavera. Maceta 2-3cm más grande. Señal: raíces saliendo por los huecos. Sustrato fresco cada vez.', notas:'☀️ Luz solar directa mínimo 6 horas. 🪴 Sustrato: 2 tazas tierra + 1 taza perlita. 🌱 Fertilizante triple 15: 1g/litro cada 20 días. 📝 Cortar flores para que dure más.' },
+  'Aloe Vera':        { tipo:'Suculenta/Cactus', riego:14, fert:45, emoji:'🌵', trasplante:'Cada 2-3 años o cuando salgan hijuelos. Primavera. Dejar secar raíces 1 día antes de trasplantar. Sustrato para cactus.', notas:'☀️ Luz solar directa 4-6 horas. 🪴 Sustrato: 2 tazas tierra cactus + 1 taza arena gruesa. 🌱 Fertilizante triple 15: 0.5g/litro cada 45 días. 📝 No mojar las hojas.' },
+  'Anturio':          { tipo:'Interior',       riego:7,  fert:30, emoji:'🌺', trasplante:'Cada 2 años en primavera. Maceta solo 3-4cm más grande. Raíces plateadas son normales, no las entierres.', notas:'☀️ Luz indirecta brillante. 🪴 Sustrato: 2 tazas tierra negra + 1 taza corteza de pino. 🌱 Fertilizante triple 15: 1g/litro cada 30 días. 📝 Alta humedad, pulveriza hojas.' },
+  'Areca':            { tipo:'Interior',       riego:7,  fert:30, emoji:'🌴', trasplante:'Cada 2-3 años. No le gusta que la muevan mucho. Solo trasplantar cuando raíces salgan por abajo. Maceta 5cm más grande.', notas:'☀️ Luz indirecta o sol suave. 🪴 Sustrato: 3 tazas tierra + 1 taza perlita. 🌱 Fertilizante triple 15: 1g/litro cada 30 días. 📝 Sensible a agua con cloro.' },
+  'Begonia':          { tipo:'Interior',       riego:5,  fert:21, emoji:'🌸', trasplante:'Cada año en primavera. Maceta solo 2cm más grande — le gusta estar apretada. Sustrato liviano con buena drenaje.', notas:'☀️ Luz indirecta brillante. 🪴 Sustrato: 2 tazas tierra + 0.5 taza perlita. 🌱 Fertilizante triple 15: 1g/litro cada 21 días. 📝 Evitar mojar flores.' },
+  'Bromelia':         { tipo:'Interior',       riego:7,  fert:30, emoji:'🌺', trasplante:'Rara vez necesita trasplante. Cuando florezca producirá hijuelos — sepáralos cuando tengan 15cm y plántalos en maceta pequeña.', notas:'☀️ Luz indirecta. 🪴 Sustrato: 2 tazas tierra orquídeas + 1 taza corteza. 🌱 Fertilizante foliar triple 15: 0.5g/litro cada 30 días. 📝 Llenar el centro con agua.' },
+  'Cactus':           { tipo:'Suculenta/Cactus', riego:21, fert:60, emoji:'🌵', trasplante:'Cada 3-4 años en primavera. Usa guantes gruesos. Deja secar raíces 3-5 días antes. No riegues en 2 semanas después.', notas:'☀️ Pleno sol mínimo 6 horas. 🪴 Sustrato: 1 taza tierra + 2 tazas arena gruesa + 0.5 taza perlita. 🌱 Fertilizante triple 15: 0.5g/litro cada 60 días. 📝 Solo fertilizar en verano.' },
+  'Calathea':         { tipo:'Interior',       riego:5,  fert:21, emoji:'🌿', trasplante:'Cada 1-2 años en primavera. Muy sensible — hazlo rápido. Maceta 3cm más grande. Agua sin cloro después del trasplante.', notas:'☀️ Luz indirecta media. 🪴 Sustrato: 2 tazas tierra negra + 1 taza perlita + 0.5 taza carbón. 🌱 Fertilizante triple 15: 0.5g/litro cada 21 días. 📝 Agua sin cloro, alta humedad.' },
+  'Camelia':          { tipo:'Exterior',       riego:5,  fert:30, emoji:'🌸', trasplante:'Cada 2-3 años en otoño (nunca en floración). Muy sensible al trasplante — minimizar daño a raíces. No trasplantar en calor fuerte.', notas:'☀️ Sol de mañana, sombra de tarde. 🪴 Sustrato: 3 tazas tierra ácida + 1 taza perlita. 🌱 Fertilizante para acidófilas: 1g/litro cada 30 días. 📝 pH 5.5-6.5.' },
+  'Cinta':            { tipo:'Interior',       riego:7,  fert:30, emoji:'🌿', trasplante:'Cada 2 años en primavera. Le encanta estar un poco apretada. Separar hijuelos para propagar. Maceta 3cm más grande.', notas:'☀️ Luz indirecta o sombra. 🪴 Sustrato: 2 tazas tierra + 1 taza perlita. 🌱 Fertilizante triple 15: 1g/litro cada 30 días. 📝 Muy resistente, ideal principiantes.' },
+  'Costilla de Adán': { tipo:'Interior',       riego:7,  fert:30, emoji:'🌿', trasplante:'Cada 2 años en primavera. Crece mucho — maceta 5-7cm más grande. Las raíces aéreas son normales, puedes guiarlas hacia la tierra.', notas:'☀️ Luz indirecta brillante. 🪴 Sustrato: 3 tazas tierra negra + 1 taza perlita + 0.5 taza corteza. 🌱 Fertilizante triple 15: 1.5g/litro cada 30 días. 📝 Limpiar hojas con trapo húmedo.' },
+  'Croton':           { tipo:'Interior',       riego:5,  fert:21, emoji:'🍁', trasplante:'Cada 2 años en primavera. Odia que lo muevan — espera señales claras (raíces saliendo). Maceta solo 3cm más grande.', notas:'☀️ Luz solar directa suave o indirecta brillante. 🪴 Sustrato: 2 tazas tierra + 1 taza perlita. 🌱 Fertilizante triple 15: 1g/litro cada 21 días. 📝 Más luz = más color en hojas.' },
+  'Dracena':          { tipo:'Interior',       riego:10, fert:30, emoji:'🌿', trasplante:'Cada 2-3 años en primavera. Crece lento. Maceta 4cm más grande. Puede ir en maceta relativamente pequeña — le gusta estar ajustada.', notas:'☀️ Luz indirecta media. 🪴 Sustrato: 3 tazas tierra + 1 taza perlita. 🌱 Fertilizante triple 15: 1g/litro cada 30 días. 📝 Sensible a flúor, usar agua filtrada.' },
+  'Espatifilo':       { tipo:'Interior',       riego:5,  fert:21, emoji:'🌸', trasplante:'Cada 1-2 años. Señal clara: raíces apretadas o que se seca muy rápido. Maceta 3cm más grande. Divide la mata al trasplantar para propagar.', notas:'☀️ Sombra o luz indirecta baja. 🪴 Sustrato: 2 tazas tierra negra + 1 taza perlita. 🌱 Fertilizante triple 15: 0.5g/litro cada 21 días. 📝 Hojas caídas = sed.' },
+  'Ficus':            { tipo:'Interior',       riego:7,  fert:30, emoji:'🌳', trasplante:'Cada 2 años en primavera. No mover de lugar después. Maceta 4cm más grande. Puede perder hojas por estrés — normal, se recupera.', notas:'☀️ Luz indirecta brillante, sin corrientes de aire. 🪴 Sustrato: 3 tazas tierra + 1 taza perlita. 🌱 Fertilizante triple 15: 1g/litro cada 30 días. 📝 No mover de lugar.' },
+  'Filodendro':       { tipo:'Interior',       riego:7,  fert:21, emoji:'🌿', trasplante:'Cada 1-2 años en primavera. Crece rápido. Maceta 4-5cm más grande. Muy fácil de trasplantar — muy tolerante.', notas:'☀️ Luz indirecta media o baja. 🪴 Sustrato: 2 tazas tierra + 1 taza perlita + 0.5 taza carbón. 🌱 Fertilizante triple 15: 1g/litro cada 21 días. 📝 Tóxica para mascotas.' },
+  'Gardenia':         { tipo:'Interior',       riego:5,  fert:21, emoji:'🌸', trasplante:'Cada 2-3 años en primavera, solo si necesario. Muy sensible — evitar en floración. Sustrato ácido fresco. Maceta solo 2-3cm más grande.', notas:'☀️ Luz solar indirecta brillante. 🪴 Sustrato: 3 tazas tierra ácida + 1 taza perlita. 🌱 Fertilizante acidófilas: 1g/litro cada 21 días. 📝 Alta humedad, pH 5-6.' },
+  'Geranio':          { tipo:'Exterior',       riego:4,  fert:21, emoji:'🌸', trasplante:'Cada año en primavera. Le gusta estar un poco apretada. Maceta solo 2cm más grande. Podar tallos al trasplantar.', notas:'☀️ Sol directo mínimo 6 horas. 🪴 Sustrato: 2 tazas tierra + 1 taza perlita + 0.5 taza arena. 🌱 Fertilizante triple 15: 1g/litro cada 21 días. 📝 Podar flores secas.' },
+  'Helécho':          { tipo:'Interior',       riego:3,  fert:21, emoji:'🌿', trasplante:'Cada año en primavera. Le gusta estar apretada pero no ahogada. Maceta 3cm más grande. Mantenlo húmedo durante el trasplante.', notas:'☀️ Luz indirecta o sombra. 🪴 Sustrato: 2 tazas tierra negra + 1 taza perlita + 1 taza musgo. 🌱 Fertilizante triple 15: 0.5g/litro cada 21 días. 📝 Humedad muy alta.' },
+  'Hibisco':          { tipo:'Exterior',       riego:3,  fert:14, emoji:'🌺', trasplante:'Cada 2 años en primavera. Maceta 5cm más grande. Podar un tercio de las ramas al trasplantar para reducir estrés.', notas:'☀️ Sol directo mínimo 6 horas. 🪴 Sustrato: 3 tazas tierra + 1 taza compost. 🌱 Fertilizante triple 15: 1.5g/litro cada 14 días. 📝 Poda leve para más flores.' },
+  'Hiedra':           { tipo:'Interior',       riego:7,  fert:30, emoji:'🌿', trasplante:'Cada 2 años en primavera. Maceta 3cm más grande. Fácil de trasplantar. Buen momento para podar y dar forma.', notas:'☀️ Luz indirecta o sombra. 🪴 Sustrato: 2 tazas tierra + 1 taza perlita. 🌱 Fertilizante triple 15: 0.5g/litro cada 30 días. 📝 Tóxica, usar guantes al manipular.' },
+  'Hortensia':        { tipo:'Exterior',       riego:3,  fert:21, emoji:'💐', trasplante:'Cada 2-3 años en otoño o primavera temprana. Maceta 5cm más grande. Regar bien antes y después del trasplante.', notas:'☀️ Sol de mañana, sombra de tarde. 🪴 Sustrato: 3 tazas tierra ácida + 1 taza perlita. 🌱 Fertilizante acidófilas: 1g/litro cada 21 días. 📝 El pH define el color.' },
+  'Jazmín':           { tipo:'Exterior',       riego:4,  fert:21, emoji:'🌸', trasplante:'Cada 2-3 años en primavera. Maceta 4cm más grande. Guiar tallos nuevos después del trasplante. Podar raíces dañadas.', notas:'☀️ Sol directo o semisombra. 🪴 Sustrato: 3 tazas tierra + 0.5 taza perlita. 🌱 Fertilizante triple 15: 1g/litro cada 21 días. 📝 Podar después de florecer.' },
+  'Lavanda':          { tipo:'Exterior',       riego:7,  fert:30, emoji:'💜', trasplante:'Cada 2-3 años en primavera. No le gustan los trasplantes — solo si es necesario. Maceta con excelente drenaje. Nunca dañar raíces.', notas:'☀️ Sol directo mínimo 8 horas. 🪴 Sustrato: 2 tazas tierra + 2 tazas arena gruesa. 🌱 Fertilizante triple 15: 0.5g/litro cada 30 días. 📝 Tolera sequía, odia encharcamiento.' },
+  'Lirio':            { tipo:'Exterior',       riego:5,  fert:21, emoji:'🌸', trasplante:'Cada 3-4 años o cuando se vea apretada. Separar bulbos al trasplantar. Otoño es el mejor momento. Plantar bulbos a 10cm de profundidad.', notas:'☀️ Sol directo 4-6 horas. 🪴 Sustrato: 3 tazas tierra + 1 taza perlita. 🌱 Fertilizante triple 15: 1g/litro cada 21 días. 📝 Tóxico para gatos.' },
+  'Malamadre':        { tipo:'Interior',       riego:7,  fert:30, emoji:'🌿', trasplante:'Cada 2 años en primavera. Muy fácil — casi imposible de matar. Separar hijuelos para propagar. Maceta 3cm más grande.', notas:'☀️ Luz indirecta o sombra. 🪴 Sustrato: 2 tazas tierra + 1 taza perlita. 🌱 Fertilizante triple 15: 0.5g/litro cada 30 días. 📝 Ideal colgante, muy resistente.' },
+  'Margarita':        { tipo:'Exterior',       riego:3,  fert:14, emoji:'🌼', trasplante:'Cada año en primavera. Dividir la mata cada 2-3 años para revitalizarla. Maceta 3cm más grande. Podar bien después del trasplante.', notas:'☀️ Sol directo mínimo 6 horas. 🪴 Sustrato: 2 tazas tierra + 1 taza perlita. 🌱 Fertilizante triple 15: 1g/litro cada 14 días. 📝 Cortar flores marchitas para más brotes.' },
+  'Menta':            { tipo:'Aromática',      riego:3,  fert:21, emoji:'🌿', trasplante:'Cada año en primavera. Crece muy rápido. Maceta 4cm más grande. Buen momento para dividir y controlar expansión.', notas:'☀️ Sol directo o semisombra. 🪴 Sustrato: 2 tazas tierra + 0.5 taza perlita. 🌱 Fertilizante triple 15: 0.5g/litro cada 21 días. 📝 Invasiva, mejor en maceta sola.' },
+  'Monstera':         { tipo:'Interior',       riego:7,  fert:30, emoji:'🌿', trasplante:'Cada 2 años en primavera. Crece mucho — maceta 5-7cm más grande. Las raíces aéreas son normales. Puedes usar tutor de musgo.', notas:'☀️ Luz indirecta brillante. 🪴 Sustrato: 3 tazas tierra negra + 1 taza perlita + 0.5 taza corteza. 🌱 Fertilizante triple 15: 1.5g/litro cada 30 días. 📝 Limpiar hojas mensualmente.' },
+  'Orquídea':         { tipo:'Interior',       riego:7,  fert:14, emoji:'🪷', trasplante:'Cada 2-3 años o cuando la corteza se desintegre. Después de florecer. Nueva corteza de pino cada vez. No enterrar la base — dejarla a nivel.', notas:'☀️ Luz indirecta brillante, sin sol directo. 🪴 Sustrato: 3 tazas corteza de pino mediana. 🌱 Fertilizante orquídeas (triple 15 muy diluido): 0.3g/litro cada 14 días. 📝 Regar solo cuando la corteza esté seca.' },
+  'Palmera':          { tipo:'Interior',       riego:7,  fert:30, emoji:'🌴', trasplante:'Cada 3-4 años. Muy sensible — solo cuando raíces salgan claramente. Maceta 5cm más grande. No cortar raíces. Regar poco las primeras 2 semanas.', notas:'☀️ Luz brillante indirecta o sol suave. 🪴 Sustrato: 3 tazas tierra + 1 taza perlita + 0.5 taza arena. 🌱 Fertilizante triple 15: 1g/litro cada 30 días. 📝 No cortar hojas verdes.' },
+  'Peperomia':        { tipo:'Interior',       riego:10, fert:30, emoji:'🌿', trasplante:'Cada 2-3 años. Le gusta estar apretada — no apresurarse. Maceta solo 2cm más grande. Muy fácil de trasplantar.', notas:'☀️ Luz indirecta media. 🪴 Sustrato: 2 tazas tierra + 1 taza perlita. 🌱 Fertilizante triple 15: 0.5g/litro cada 30 días. 📝 Tolera olvidos de riego, ideal principiantes.' },
+  'Pilea':            { tipo:'Interior',       riego:7,  fert:21, emoji:'🌿', trasplante:'Cada año en primavera. Crece rápido. Maceta 3cm más grande. Fácil de propagar — separar hijuelos que salen de la base.', notas:'☀️ Luz indirecta brillante. 🪴 Sustrato: 2 tazas tierra + 1 taza perlita. 🌱 Fertilizante triple 15: 0.5g/litro cada 21 días. 📝 Rotar maceta para crecimiento parejo.' },
+  'Pothos':           { tipo:'Interior',       riego:7,  fert:30, emoji:'🌿', trasplante:'Cada 2 años en primavera. Muy resistente al trasplante. Maceta 4cm más grande. Buen momento para podar y propagar esquejes en agua.', notas:'☀️ Luz indirecta baja o media. 🪴 Sustrato: 2 tazas tierra + 1 taza perlita. 🌱 Fertilizante triple 15: 1g/litro cada 30 días. 📝 Purifica el aire, muy resistente.' },
+  'Rosa':             { tipo:'Exterior',       riego:3,  fert:14, emoji:'🌹', trasplante:'Cada 2-3 años en invierno (reposo). Podar bien antes de trasplantar. Maceta 5cm más grande. Sustrato rico en materia orgánica.', notas:'☀️ Sol directo mínimo 6 horas. 🪴 Sustrato: 3 tazas tierra + 1 taza compost + 0.5 taza perlita. 🌱 Fertilizante triple 15: 1.5g/litro cada 14 días. 📝 Podar en ángulo 45°.' },
+  'Romero':           { tipo:'Exterior',       riego:7,  fert:30, emoji:'🌿', trasplante:'Cada 2-3 años en primavera. No le gustan los trasplantes frecuentes. Maceta con drenaje perfecto. Raíces muy sensibles al exceso de humedad.', notas:'☀️ Sol directo mínimo 6 horas. 🪴 Sustrato: 2 tazas tierra + 2 tazas arena gruesa. 🌱 Fertilizante triple 15: 0.5g/litro cada 30 días. 📝 Tolera sequía, odia exceso de agua.' },
+  'Sansevieria':      { tipo:'Interior',       riego:14, fert:45, emoji:'🌿', trasplante:'Cada 3-5 años o cuando parta la maceta. Le encanta estar muy apretada. Maceta solo 2cm más grande. Separar hijuelos para propagar.', notas:'☀️ Luz baja a brillante, muy adaptable. 🪴 Sustrato: 2 tazas tierra cactus + 1 taza perlita. 🌱 Fertilizante triple 15: 0.5g/litro cada 45 días. 📝 La planta más resistente al abandono.' },
+  'Suculenta':        { tipo:'Suculenta/Cactus', riego:14, fert:45, emoji:'🪴', trasplante:'Cada 2-3 años en primavera. Dejar secar 1-2 días antes. No regar en 1 semana después. Maceta con hueco de drenaje obligatorio.', notas:'☀️ Sol directo 4-6 horas mínimo. 🪴 Sustrato: 1.5 tazas tierra + 1.5 tazas arena gruesa + 0.5 taza perlita. 🌱 Fertilizante triple 15: 0.5g/litro cada 45 días. 📝 Solo fertilizar en temporada cálida.' },
+  'Tomate':           { tipo:'Frutal',         riego:2,  fert:14, emoji:'🍅', trasplante:'Trasplantar de semillero a maceta definitiva cuando tenga 4-6 hojas verdaderas. Maceta mínimo 30cm de diámetro. Enterrar tallo hasta las primeras hojas.', notas:'☀️ Sol directo mínimo 8 horas. 🪴 Sustrato: 3 tazas tierra negra + 1 taza compost + 0.5 taza perlita. 🌱 Fertilizante triple 15: 1.5g/litro cada 14 días, cambiar a potasio al florecer.' },
+  'Violeta Africana': { tipo:'Interior',       riego:5,  fert:14, emoji:'💜', trasplante:'Cada año en primavera. Le encanta estar apretada — maceta solo 1-2cm más grande. Nunca cubrir el cuello de la planta. Usar sustrato liviano.', notas:'☀️ Luz indirecta brillante. 🪴 Sustrato: 2 tazas tierra negra muy fina + 0.5 taza perlita. 🌱 Fertilizante violetas (triple 15): 0.5g/litro cada 14 días. 📝 No mojar hojas ni flores.' },
+  'Yuca':             { tipo:'Interior',       riego:10, fert:30, emoji:'🌿', trasplante:'Cada 2-3 años en primavera. Maceta 5cm más grande. Muy resistente al trasplante. Puede podarse el tallo para controlar altura.', notas:'☀️ Luz solar directa o muy brillante. 🪴 Sustrato: 2 tazas tierra + 1 taza arena + 0.5 taza perlita. 🌱 Fertilizante triple 15: 1g/litro cada 30 días. 📝 Tolera sequía.' },
+  'Zamioculca':       { tipo:'Interior',       riego:14, fert:45, emoji:'🌿', trasplante:'Cada 2-3 años. Crece muy lento. Maceta 3cm más grande. Raíces gruesas (rizomas) — manejar con cuidado. Propagar dividiendo rizomas.', notas:'☀️ Luz baja a media indirecta. 🪴 Sustrato: 2 tazas tierra + 1 taza perlita. 🌱 Fertilizante triple 15: 0.5g/litro cada 45 días. 📝 La más resistente al olvido. Tóxica para mascotas.' },
+  'Bambú':            { tipo:'Exterior',       riego:5,  fert:21, emoji:'🎋', trasplante:'Cada 2 años en primavera. Crece muy rápido. Maceta grande desde el inicio. Dividir matas al trasplantar para controlar.', notas:'☀️ Sol directo o semisombra. 🪴 Sustrato: 3 tazas tierra + 1 taza compost. 🌱 Fertilizante triple 15: 1.5g/litro cada 21 días. 📝 Crece rápido, controlar expansión.' },
+  'Cala':             { tipo:'Exterior',       riego:4,  fert:21, emoji:'🌸', trasplante:'Cada 2-3 años en otoño. Separar rizomas al trasplantar. Plantar a 5-8cm de profundidad. Buen momento para dividir y multiplicar.', notas:'☀️ Sol de mañana o luz indirecta brillante. 🪴 Sustrato: 3 tazas tierra negra + 1 taza perlita. 🌱 Fertilizante triple 15: 1g/litro cada 21 días. 📝 Tóxica para mascotas.' },
+  'Girasol':          { tipo:'Exterior',       riego:3,  fert:14, emoji:'🌻', trasplante:'Trasplantar de semillero solo con 2-3 hojas — después es muy difícil. Maceta mínimo 30cm. Preferiblemente sembrar directo en maceta definitiva.', notas:'☀️ Sol directo mínimo 8 horas. 🪴 Sustrato: 3 tazas tierra + 1 taza compost. 🌱 Fertilizante triple 15: 1.5g/litro cada 14 días. 📝 Orientar hacia el sur.' },
+  'Limonero':         { tipo:'Frutal',         riego:4,  fert:21, emoji:'🍋', trasplante:'Cada 3-4 años en primavera. Maceta 6-8cm más grande. Muy sensible — no dañar raíces. No fertilizar en 2 meses después del trasplante.', notas:'☀️ Sol directo mínimo 8 horas. 🪴 Sustrato: 3 tazas tierra + 1 taza perlita + 0.5 taza arena. 🌱 Fertilizante cítricos (triple 15): 1.5g/litro cada 21 días. 📝 pH 6-7.' },
+  'Maranta':          { tipo:'Interior',       riego:5,  fert:21, emoji:'🌿', trasplante:'Cada 1-2 años en primavera. Maceta 3cm más grande. Dividir al trasplantar para propagar. Muy sensible al frío durante el trasplante.', notas:'☀️ Luz indirecta baja a media. 🪴 Sustrato: 2 tazas tierra negra + 1 taza perlita. 🌱 Fertilizante triple 15: 0.5g/litro cada 21 días. 📝 Agua sin cloro, alta humedad.' },
+  'Perejil':          { tipo:'Aromática',      riego:3,  fert:21, emoji:'🌿', trasplante:'Cada año. Trasplantar de semillero cuando tenga 4-5cm. Raíces pivotantes largas — maceta alta mínimo 20cm. No interrumpir la raíz principal.', notas:'☀️ Sol directo 4-6 horas. 🪴 Sustrato: 2 tazas tierra + 0.5 taza perlita. 🌱 Fertilizante triple 15: 0.5g/litro cada 21 días. 📝 Cosechar de afuera hacia adentro.' },
+  'Salvia':           { tipo:'Aromática',      riego:5,  fert:30, emoji:'🌿', trasplante:'Cada 2 años en primavera. Maceta 3cm más grande. Podar un tercio al trasplantar. No le gustan los trasplantes frecuentes.', notas:'☀️ Sol directo mínimo 6 horas. 🪴 Sustrato: 2 tazas tierra + 1 taza arena. 🌱 Fertilizante triple 15: 0.5g/litro cada 30 días. 📝 Podar para que no lignifique.' },
+  'Tomillo':          { tipo:'Aromática',      riego:7,  fert:30, emoji:'🌿', trasplante:'Cada 2 años en primavera. Maceta con drenaje excelente. No le gustan los trasplantes — solo si necesario. Raíces delicadas.', notas:'☀️ Sol directo mínimo 6 horas. 🪴 Sustrato: 2 tazas tierra + 1 taza arena gruesa. 🌱 Fertilizante triple 15: 0.5g/litro cada 30 días. 📝 Muy tolera sequía y calor.' },
 };
+
 
 const PLANTAS_COMUNES = Object.keys(PLANTAS_DB);
 
