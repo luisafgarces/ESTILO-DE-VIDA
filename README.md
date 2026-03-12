@@ -1,1 +1,0 @@
-# ESTILO-DE-VIDA
