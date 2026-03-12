@@ -13,7 +13,7 @@
 <!-- Firebase SDK -->
 <script type="module">
   import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-  import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
   import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, query, orderBy } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
   const firebaseConfig = {
@@ -26,15 +26,13 @@
     measurementId:     "G-EYJQ501KGS"
   };
 
-  const app      = initializeApp(firebaseConfig);
-  const auth     = getAuth(app);
-  const db       = getFirestore(app);
-  const provider = new GoogleAuthProvider();
+  const app  = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db   = getFirestore(app);
   let unsubscribe = null;
 
-  // Detectar si corre como PWA instalada (sin barra de navegador)
-  const isPWA = window.navigator.standalone === true ||
-                window.matchMedia('(display-mode: standalone)').matches;
+  // Persistencia local: la sesión se guarda y nunca se cierra sola
+  setPersistence(auth, browserLocalPersistence).catch(console.error);
 
   function suscribirPlantas(userId) {
     if (unsubscribe) unsubscribe();
@@ -46,62 +44,67 @@
     }, err => console.error('Firestore error:', err));
   }
 
-  // Manejar resultado del redirect (después de volver desde Google en PWA)
-  getRedirectResult(auth).then(result => {
-    if (result?.user) console.log('Login por redirect OK:', result.user.displayName);
-  }).catch(e => console.error('Redirect result error:', e));
-
   onAuthStateChanged(auth, user => {
     const loginScreen = document.getElementById('login-screen');
     const appContent  = document.getElementById('app-content');
     if (user) {
-      window._fbUserId = user.uid;
-      window._fbUserName = user.displayName || 'Jardinera';
-      window._fbUserPhoto = user.photoURL || '';
+      window._fbUserId   = user.uid;
+      window._fbUserName = user.email?.split('@')[0] || 'Jardinera';
       if (loginScreen) loginScreen.style.display = 'none';
-      if (appContent)  appContent.style.display = 'block';
+      if (appContent)  appContent.style.display  = 'block';
+      const uname = document.getElementById('user-name');
+      if (uname) uname.textContent = window._fbUserName;
       const avatar = document.getElementById('user-avatar');
-      const uname  = document.getElementById('user-name');
-      if (avatar) avatar.src = window._fbUserPhoto;
-      if (uname)  uname.textContent = window._fbUserName.split(' ')[0];
+      if (avatar) avatar.style.display = 'none'; // no hay foto con email/pass
       suscribirPlantas(user.uid);
     } else {
       window._fbUserId = null;
       if (loginScreen) loginScreen.style.display = 'flex';
-      if (appContent)  appContent.style.display = 'none';
+      if (appContent)  appContent.style.display  = 'none';
     }
   });
 
   window._fbSavePlanta = async (planta) => {
     if (!window._fbUserId) return;
-    const ref = doc(db, 'usuarios', window._fbUserId, 'plantas', String(planta.id));
-    await setDoc(ref, planta);
+    await setDoc(doc(db, 'usuarios', window._fbUserId, 'plantas', String(planta.id)), planta);
   };
 
   window._fbDeletePlanta = async (plantaId) => {
     if (!window._fbUserId) return;
-    const ref = doc(db, 'usuarios', window._fbUserId, 'plantas', String(plantaId));
-    await deleteDoc(ref);
+    await deleteDoc(doc(db, 'usuarios', window._fbUserId, 'plantas', String(plantaId)));
   };
 
-  window._fbSignIn = async () => {
+  // Login: intenta entrar, si no existe la cuenta la crea automáticamente
+  window._fbSignIn = async (email, password) => {
+    const errEl = document.getElementById('login-error');
+    const btn   = document.getElementById('login-btn');
+    errEl.textContent = '';
+    btn.disabled = true;
+    btn.textContent = 'Entrando...';
     try {
-      if (isPWA) {
-        // En PWA (iPhone con app instalada) usar redirect — los popups no funcionan
-        await signInWithRedirect(auth, provider);
-      } else {
-        // En navegador normal usar popup
-        await signInWithPopup(auth, provider);
-      }
+      await signInWithEmailAndPassword(auth, email, password);
     } catch(e) {
-      console.error(e);
-      // Si popup falla por cualquier razón, intentar redirect como fallback
-      if (e.code === 'auth/popup-blocked' || e.code === 'auth/popup-closed-by-user') {
-        await signInWithRedirect(auth, provider);
+      if (e.code === 'auth/user-not-found' || e.code === 'auth/invalid-credential') {
+        // Primera vez: crear cuenta
+        try {
+          await createUserWithEmailAndPassword(auth, email, password);
+        } catch(e2) {
+          errEl.textContent = e2.code === 'auth/email-already-in-use'
+            ? 'Contraseña incorrecta. Intenta de nuevo.'
+            : e2.code === 'auth/weak-password'
+            ? 'La contraseña debe tener mínimo 6 caracteres.'
+            : 'Error: ' + e2.message;
+        }
+      } else if (e.code === 'auth/wrong-password') {
+        errEl.textContent = 'Contraseña incorrecta. Intenta de nuevo.';
+      } else if (e.code === 'auth/invalid-email') {
+        errEl.textContent = 'El correo no es válido.';
       } else {
-        alert('Error al iniciar sesión: ' + e.message);
+        errEl.textContent = 'Error: ' + e.message;
       }
     }
+    btn.disabled = false;
+    btn.textContent = 'Entrar 🌿';
   };
 
   window._fbSignOut = async () => {
@@ -919,15 +922,44 @@
 <body>
 
 <!-- ══ PANTALLA DE LOGIN ══ -->
-<div id="login-screen" style="display:none;position:fixed;inset:0;background:var(--crema);z-index:9999;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px;text-align:center;">
-  <div style="font-size:5rem;margin-bottom:16px">🌿</div>
-  <h1 style="font-family:'Playfair Display',serif;font-size:2rem;color:var(--verde-oscuro);margin-bottom:8px">Mis Matas</h1>
-  <p style="color:var(--texto-suave);font-size:0.95rem;margin-bottom:40px;line-height:1.6">Tu jardín sincronizado en todos<br>tus dispositivos en tiempo real</p>
-  <button onclick="window._fbSignIn()" style="display:flex;align-items:center;gap:12px;background:white;border:2px solid var(--crema-oscuro);border-radius:14px;padding:14px 24px;font-family:'Lato',sans-serif;font-size:1rem;font-weight:700;color:var(--texto);cursor:pointer;box-shadow:0 2px 12px var(--sombra);transition:all 0.2s;margin:0 auto">
-    <svg width="22" height="22" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
-    Entrar con Google
-  </button>
-  <p style="margin-top:24px;font-size:0.75rem;color:var(--texto-suave)">Tus plantas se sincronizan automáticamente<br>en celular, tablet y computador</p>
+<div id="login-screen" style="display:none;position:fixed;inset:0;background:var(--crema);z-index:9999;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px;">
+  <div style="width:100%;max-width:360px">
+    <div style="text-align:center;margin-bottom:32px">
+      <div style="font-size:4rem;margin-bottom:12px">🌿</div>
+      <h1 style="font-family:'Playfair Display',serif;font-size:2rem;color:var(--verde-oscuro);margin-bottom:6px">Mis Matas</h1>
+      <p style="color:var(--texto-suave);font-size:0.88rem;line-height:1.6">Tu jardín sincronizado en todos tus dispositivos</p>
+    </div>
+
+    <div style="background:white;border-radius:20px;padding:24px;box-shadow:0 4px 24px var(--sombra)">
+      <div style="margin-bottom:16px">
+        <label style="font-size:0.75rem;font-weight:700;color:var(--texto-suave);text-transform:uppercase;letter-spacing:0.05em;display:block;margin-bottom:6px">Correo electrónico</label>
+        <input id="login-email" type="email" placeholder="tu@correo.com" autocomplete="email"
+          style="width:100%;padding:12px 14px;border:2px solid var(--crema-oscuro);border-radius:12px;font-family:'Lato',sans-serif;font-size:0.95rem;color:var(--texto);background:var(--crema);outline:none;transition:border 0.2s"
+          onfocus="this.style.borderColor='var(--verde-medio)'" onblur="this.style.borderColor='var(--crema-oscuro)'"
+          onkeydown="if(event.key==='Enter')document.getElementById('login-pass').focus()">
+      </div>
+
+      <div style="margin-bottom:8px">
+        <label style="font-size:0.75rem;font-weight:700;color:var(--texto-suave);text-transform:uppercase;letter-spacing:0.05em;display:block;margin-bottom:6px">Contraseña</label>
+        <input id="login-pass" type="password" placeholder="Mínimo 6 caracteres" autocomplete="current-password"
+          style="width:100%;padding:12px 14px;border:2px solid var(--crema-oscuro);border-radius:12px;font-family:'Lato',sans-serif;font-size:0.95rem;color:var(--texto);background:var(--crema);outline:none;transition:border 0.2s"
+          onfocus="this.style.borderColor='var(--verde-medio)'" onblur="this.style.borderColor='var(--crema-oscuro)'"
+          onkeydown="if(event.key==='Enter')loginConCorreo()">
+      </div>
+
+      <p id="login-error" style="min-height:18px;font-size:0.8rem;color:var(--rojo-alerta);margin-bottom:12px;text-align:center"></p>
+
+      <button id="login-btn" onclick="loginConCorreo()"
+        style="width:100%;padding:14px;background:linear-gradient(135deg,var(--verde-oscuro),var(--verde-medio));color:white;border:none;border-radius:14px;font-family:'Lato',sans-serif;font-size:1rem;font-weight:700;cursor:pointer;letter-spacing:0.03em;transition:opacity 0.2s">
+        Entrar 🌿
+      </button>
+    </div>
+
+    <p style="text-align:center;margin-top:16px;font-size:0.75rem;color:var(--texto-suave);line-height:1.6">
+      Primera vez aquí → se crea tu cuenta automáticamente.<br>
+      Solo necesitas ingresar una vez.
+    </p>
+  </div>
 </div>
 
 <!-- ══ CONTENIDO PRINCIPAL ══ -->
@@ -1242,6 +1274,16 @@ let plantas = [];
 let selectedEmoji = '🪴';
 let fotoBase64 = null;
 let activeGuia = null;
+
+function loginConCorreo() {
+  const email = document.getElementById('login-email').value.trim();
+  const pass  = document.getElementById('login-pass').value;
+  if (!email || !pass) {
+    document.getElementById('login-error').textContent = 'Ingresa tu correo y contraseña.';
+    return;
+  }
+  window._fbSignIn(email, pass);
+}
 
 function load() {
   // Firebase listener handles loading. Fallback solo si no hay Firebase.
