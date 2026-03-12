@@ -13,15 +13,9 @@
 <!-- Firebase SDK -->
 <script type="module">
   import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-  import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+  import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
   import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, query, orderBy } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
-  // ════════════════════════════════════════════════════
-  //  🔧 CONFIGURACIÓN DE FIREBASE
-  //  Reemplaza estos valores con los de tu proyecto.
-  //  Ve a: https://console.firebase.google.com
-  //  → Crear proyecto → Agregar app web → Copiar config
-  // ════════════════════════════════════════════════════
   const firebaseConfig = {
     apiKey:            "AIzaSyB0qZu-L9mA5zzt7s98d9jD3kgamuejD9o",
     authDomain:        "plania-f7102.firebaseapp.com",
@@ -32,60 +26,70 @@
     measurementId:     "G-EYJQ501KGS"
   };
 
-  const CONFIGURED = !firebaseConfig.apiKey.startsWith("TU_");
-
-  let db, auth, userId;
+  const app      = initializeApp(firebaseConfig);
+  const auth     = getAuth(app);
+  const db       = getFirestore(app);
+  const provider = new GoogleAuthProvider();
   let unsubscribe = null;
 
-  if (CONFIGURED) {
-    const app = initializeApp(firebaseConfig);
-    auth = getAuth(app);
-    db   = getFirestore(app);
-
-    // Login anónimo: cada usuario tiene su propio jardín privado.
-    // Si el mismo usuario abre la app en otro dispositivo, los datos son
-    // compartidos mientras use la misma cuenta (ver nota sobre login social abajo).
-    signInAnonymously(auth).catch(console.error);
-
-    onAuthStateChanged(auth, user => {
-      if (!user) return;
-      userId = user.uid;
-      window._fbUserId = userId;
-      // Escucha en tiempo real la colección de plantas del usuario
-      const q = query(
-        collection(db, 'usuarios', userId, 'plantas'),
-        orderBy('creadaEn', 'asc')
-      );
-      if (unsubscribe) unsubscribe();
-      unsubscribe = onSnapshot(q, snap => {
-        plantas = snap.docs.map(d => ({ ...d.data(), id: d.id }));
-        renderPlantas();
-        showToast('🔄 Sincronizado');
-      });
-    });
+  function suscribirPlantas(userId) {
+    if (unsubscribe) unsubscribe();
+    const q = query(collection(db, 'usuarios', userId, 'plantas'), orderBy('creadaEn', 'asc'));
+    unsubscribe = onSnapshot(q, snap => {
+      window.plantas = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+      if (window.renderPlantas) window.renderPlantas();
+      if (window.showToast) window.showToast('☁️ Sincronizado');
+    }, err => console.error('Firestore error:', err));
   }
 
-  // Expone funciones de Firestore al scope global para que el JS existente las llame
+  onAuthStateChanged(auth, user => {
+    const loginScreen = document.getElementById('login-screen');
+    const appContent  = document.getElementById('app-content');
+    if (user) {
+      window._fbUserId = user.uid;
+      window._fbUserName = user.displayName || 'Jardinera';
+      window._fbUserPhoto = user.photoURL || '';
+      if (loginScreen) loginScreen.style.display = 'none';
+      if (appContent)  appContent.style.display = 'block';
+      // Actualizar avatar y nombre en header
+      const avatar = document.getElementById('user-avatar');
+      const uname  = document.getElementById('user-name');
+      if (avatar) avatar.src = window._fbUserPhoto;
+      if (uname)  uname.textContent = window._fbUserName.split(' ')[0];
+      suscribirPlantas(user.uid);
+    } else {
+      window._fbUserId = null;
+      if (loginScreen) loginScreen.style.display = 'flex';
+      if (appContent)  appContent.style.display = 'none';
+    }
+  });
+
   window._fbSavePlanta = async (planta) => {
-    if (!CONFIGURED || !userId) return;
-    const ref = doc(db, 'usuarios', userId, 'plantas', String(planta.id));
+    if (!window._fbUserId) return;
+    const ref = doc(db, 'usuarios', window._fbUserId, 'plantas', String(planta.id));
     await setDoc(ref, planta);
   };
 
   window._fbDeletePlanta = async (plantaId) => {
-    if (!CONFIGURED || !userId) return;
-    const ref = doc(db, 'usuarios', userId, 'plantas', String(plantaId));
+    if (!window._fbUserId) return;
+    const ref = doc(db, 'usuarios', window._fbUserId, 'plantas', String(plantaId));
     await deleteDoc(ref);
   };
 
-  window._fbConfigured = CONFIGURED;
+  window._fbSignIn = async () => {
+    try {
+      await signInWithPopup(auth, provider);
+    } catch(e) {
+      console.error(e);
+      alert('Error al iniciar sesión: ' + e.message);
+    }
+  };
 
-  if (!CONFIGURED) {
-    window.addEventListener('DOMContentLoaded', () => {
-      const banner = document.getElementById('firebase-banner');
-      if (banner) banner.style.display = 'flex';
-    });
-  }
+  window._fbSignOut = async () => {
+    if (confirm('¿Cerrar sesión?')) await signOut(auth);
+  };
+
+  window._fbConfigured = true;
 </script>
 <style>
   :root {
@@ -882,9 +886,32 @@
 </head>
 <body>
 
+<!-- ══ PANTALLA DE LOGIN ══ -->
+<div id="login-screen" style="display:none;position:fixed;inset:0;background:var(--crema);z-index:9999;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px;text-align:center;">
+  <div style="font-size:5rem;margin-bottom:16px">🌿</div>
+  <h1 style="font-family:'Playfair Display',serif;font-size:2rem;color:var(--verde-oscuro);margin-bottom:8px">Mis Matas</h1>
+  <p style="color:var(--texto-suave);font-size:0.95rem;margin-bottom:40px;line-height:1.6">Tu jardín sincronizado en todos<br>tus dispositivos en tiempo real</p>
+  <button onclick="window._fbSignIn()" style="display:flex;align-items:center;gap:12px;background:white;border:2px solid var(--crema-oscuro);border-radius:14px;padding:14px 24px;font-family:'Lato',sans-serif;font-size:1rem;font-weight:700;color:var(--texto);cursor:pointer;box-shadow:0 2px 12px var(--sombra);transition:all 0.2s;margin:0 auto">
+    <svg width="22" height="22" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+    Entrar con Google
+  </button>
+  <p style="margin-top:24px;font-size:0.75rem;color:var(--texto-suave)">Tus plantas se sincronizan automáticamente<br>en celular, tablet y computador</p>
+</div>
+
+<!-- ══ CONTENIDO PRINCIPAL ══ -->
+<div id="app-content" style="display:none">
+
 <header>
-  <h1>Mis <span>Matas</span> 🌿 <span id="sync-dot" class="offline" title="Sin sincronizar"></span></h1>
-  <p id="header-subtitle">Cargando tu jardín...</p>
+  <div style="display:flex;align-items:center;justify-content:space-between">
+    <div>
+      <h1 style="font-family:'Playfair Display',serif;font-size:1.8rem;color:var(--crema);letter-spacing:0.02em">Mis <span style="color:var(--verde-claro)">Matas</span> 🌿 <span id="sync-dot" class="offline" title="Sin sincronizar"></span></h1>
+      <p id="header-subtitle" style="font-size:0.8rem;color:var(--beige);margin-top:2px;font-weight:300">Cargando tu jardín...</p>
+    </div>
+    <button onclick="window._fbSignOut()" style="display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:20px;padding:6px 12px 6px 6px;cursor:pointer;transition:all 0.2s" title="Cerrar sesión">
+      <img id="user-avatar" src="" width="28" height="28" style="border-radius:50%;background:var(--verde-medio)">
+      <span id="user-name" style="font-family:'Lato',sans-serif;font-size:0.78rem;color:var(--crema);font-weight:700"></span>
+    </button>
+  </div>
 </header>
 
 <nav>
@@ -984,6 +1011,8 @@
   </div>
 </div>
 
+</div><!-- /app-content -->
+
 <!-- ── FIREBASE BANNER ── -->
 <div id="firebase-banner">
   <strong>⚠️ Firebase no configurado — modo local activo</strong>
@@ -1078,10 +1107,14 @@ let fotoBase64 = null;
 let activeGuia = null;
 
 function load() {
-  // Firebase listener handles loading when configured.
-  // Fallback to localStorage when not configured.
+  // Firebase listener handles loading. Fallback solo si no hay Firebase.
   if (!window._fbConfigured) {
     try { plantas = JSON.parse(localStorage.getItem('mismatas_plantas') || '[]'); } catch(e) { plantas = []; }
+  }
+  // Mostrar login screen hasta que Firebase resuelva el estado de auth
+  if (window._fbConfigured) {
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('app-content').style.display = 'none';
   }
 }
 
