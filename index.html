@@ -1527,7 +1527,7 @@ async function pedirConsejoTrasplanteIA() {
 
   try {
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${GEMINI_API_KEY}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1758,7 +1758,7 @@ async function sendMessage() {
     const sistemaPrompt = `Eres un experto botánico y horticultor amigable que ayuda a cuidar plantas. ${contexto} Responde en español de forma clara, práctica y cálida. Máximo 3 párrafos cortos. Usa emojis de plantas con moderación.`;
 
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${GEMINI_API_KEY}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1835,7 +1835,7 @@ async function ejecutarDiagnostico() {
     const contextoPlanta = `La planta es: ${planta.nombre} (${planta.tipo}). Se riega cada ${planta.frecRiego} días. Notas: ${planta.notas || 'ninguna'}.`;
 
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${GEMINI_API_KEY}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -2019,7 +2019,7 @@ async function identificarPlanta() {
     const base64Data = comprimida.split(',')[1];
 
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${GEMINI_API_KEY}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
