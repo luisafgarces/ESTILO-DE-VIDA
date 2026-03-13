@@ -2094,7 +2094,15 @@ Si no es una planta escribe solo: NO_ES_PLANTA` }
       document.getElementById('f-fertilizacion').value = fert;
       if (notasCompletas) document.getElementById('f-notas').value = notasCompletas;
 
-      if (nombre && PLANTAS_DB[nombre]) rellenarCamposPlanta(nombre);
+      // Si está en DB local, usar emoji y notas de la DB pero respetar riego/fert de la IA
+      if (nombre && PLANTAS_DB[nombre]) {
+        const datos = PLANTAS_DB[nombre];
+        if (datos.emoji) { selectedEmoji = datos.emoji; buildEmojiPicker(); }
+        if (datos.tipo)  document.getElementById('f-tipo').value = datos.tipo;
+        if (datos.riego) document.getElementById('f-riego').value = datos.riego;
+        if (datos.fert)  document.getElementById('f-fertilizacion').value = datos.fert;
+        if (datos.notas) document.getElementById('f-notas').value = datos.notas;
+      }
 
       resultado.innerHTML = `
         <strong>🌿 ${nombre || 'Planta identificada'}</strong>
