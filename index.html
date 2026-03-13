@@ -2081,27 +2081,31 @@ Si no es una planta escribe solo: NO_ES_PLANTA` }
         notasIA      ? `📝 ${notasIA}` : '',
       ].filter(Boolean).join('. ');
 
-      if (nombre) document.getElementById('f-nombre').value = nombre;
-      if (tipo) {
-        const sel = document.getElementById('f-tipo');
-        const match = [...sel.options].find(o =>
-          o.value.toLowerCase().replace('/','').includes(tipo.toLowerCase().replace('/','').substring(0,5)) ||
-          tipo.toLowerCase().includes(o.value.toLowerCase().substring(0,5))
-        );
-        if (match) sel.value = match.value;
-      }
-      document.getElementById('f-riego').value = riego;
-      document.getElementById('f-fertilizacion').value = fert;
-      if (notasCompletas) document.getElementById('f-notas').value = notasCompletas;
-
-      // Si está en DB local, usar emoji y notas de la DB pero respetar riego/fert de la IA
-      if (nombre && PLANTAS_DB[nombre]) {
-        const datos = PLANTAS_DB[nombre];
-        if (datos.emoji) { selectedEmoji = datos.emoji; buildEmojiPicker(); }
-        if (datos.tipo)  document.getElementById('f-tipo').value = datos.tipo;
-        if (datos.riego) document.getElementById('f-riego').value = datos.riego;
-        if (datos.fert)  document.getElementById('f-fertilizacion').value = datos.fert;
-        if (datos.notas) document.getElementById('f-notas').value = datos.notas;
+      // Si está en DB local, la DB tiene prioridad (datos verificados)
+      // Si no está en DB, usar lo que devolvió la IA
+      const dbDatos = PLANTAS_DB[nombre];
+      if (dbDatos) {
+        // Usar todo de la DB
+        document.getElementById('f-nombre').value = nombre;
+        document.getElementById('f-tipo').value   = dbDatos.tipo;
+        document.getElementById('f-riego').value  = dbDatos.riego;
+        document.getElementById('f-fertilizacion').value = dbDatos.fert;
+        document.getElementById('f-notas').value  = dbDatos.notas || '';
+        if (dbDatos.emoji) { selectedEmoji = dbDatos.emoji; buildEmojiPicker(); }
+      } else {
+        // No está en DB — usar datos de la IA
+        if (nombre) document.getElementById('f-nombre').value = nombre;
+        if (tipo) {
+          const sel = document.getElementById('f-tipo');
+          const match = [...sel.options].find(o =>
+            o.value.toLowerCase().replace('/','').includes(tipo.toLowerCase().replace('/','').substring(0,5)) ||
+            tipo.toLowerCase().includes(o.value.toLowerCase().substring(0,5))
+          );
+          if (match) sel.value = match.value;
+        }
+        document.getElementById('f-riego').value = riego;
+        document.getElementById('f-fertilizacion').value = fert;
+        if (notasCompletas) document.getElementById('f-notas').value = notasCompletas;
       }
 
       resultado.innerHTML = `
