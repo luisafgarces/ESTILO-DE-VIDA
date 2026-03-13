@@ -1120,6 +1120,13 @@
         <div id="detalle-db-trasplante"></div>
       </div>
 
+      <!-- Fertilizante -->
+      <div id="detalle-fert-sec" style="display:none;background:#f0fdf4;border-radius:12px;padding:14px;margin-bottom:12px;font-size:0.85rem;color:var(--texto);line-height:1.7;border-left:3px solid #16a34a">
+        <div style="font-size:0.7rem;font-weight:700;color:#16a34a;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">🌱 Fertilizante</div>
+        <div id="detalle-fert-nombre" style="font-weight:700;margin-bottom:6px;color:var(--verde-oscuro)"></div>
+        <div id="detalle-fert-guia"></div>
+      </div>
+
       <!-- Acciones rápidas -->
       <div style="display:flex;gap:10px;margin-top:4px">
         <button id="detalle-btn-regar" style="flex:1;padding:12px;background:var(--azul-agua);color:white;border:none;border-radius:12px;font-family:'Lato',sans-serif;font-size:0.88rem;font-weight:700;cursor:pointer">💧 Regar ahora</button>
@@ -1230,6 +1237,27 @@
     <div class="form-group">
       <label>Frecuencia de fertilización (días)</label>
       <input type="number" id="f-fertilizacion" value="30" min="7" max="180">
+    </div>
+
+    <div class="form-group">
+      <label>¿Qué fertilizante tienes? 🌱</label>
+      <select id="f-fertilizante-tipo" onchange="actualizarGuiaFertilizante()">
+        <option value="">— Selecciona tu fertilizante —</option>
+        <option value="triple15">Triple 15 (NPK 15-15-15)</option>
+        <option value="orquideas">Fertilizante para orquídeas</option>
+        <option value="cactus">Fertilizante para cactus/suculentas</option>
+        <option value="acidofilas">Fertilizante para acidófilas</option>
+        <option value="humus">Humus de lombriz</option>
+        <option value="compost">Compost / abono orgánico</option>
+        <option value="npk_floracion">NPK floración (alto en P y K)</option>
+        <option value="foliar">Fertilizante foliar</option>
+        <option value="osmocote">Osmocote (liberación lenta)</option>
+        <option value="ninguno">No tengo fertilizante</option>
+      </select>
+      <div id="guia-fertilizante" style="display:none;margin-top:10px;background:#f0fdf4;border-radius:12px;padding:14px;border-left:3px solid var(--verde-medio)">
+        <div style="font-size:0.7rem;font-weight:700;color:var(--verde-medio);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">📋 Guía de uso</div>
+        <div id="guia-fertilizante-texto" style="font-size:0.85rem;color:var(--texto);line-height:1.7"></div>
+      </div>
     </div>
 
     <div class="form-group">
@@ -1483,6 +1511,17 @@ function abrirDetallePlanta(i) {
     dbSec.style.display = 'none';
   }
 
+  // Fertilizante
+  const fertSec = document.getElementById('detalle-fert-sec');
+  if (p.fertilizanteTipo && FERTILIZANTES_DB[p.fertilizanteTipo]) {
+    const fd = FERTILIZANTES_DB[p.fertilizanteTipo];
+    document.getElementById('detalle-fert-nombre').textContent = fd.nombre;
+    document.getElementById('detalle-fert-guia').innerHTML = fd.guia(p.tipo, p.frecFert);
+    fertSec.style.display = 'block';
+  } else {
+    fertSec.style.display = 'none';
+  }
+
   // Botones de acción
   document.getElementById('detalle-btn-regar').onclick = () => { riegoRapido(i); overlay.classList.remove('open'); };
   document.getElementById('detalle-btn-trasplante').onclick = () => { overlay.classList.remove('open'); abrirTrasplante(i); };
@@ -1492,8 +1531,85 @@ function abrirDetallePlanta(i) {
 }
 
 // ════════════════════════════════
-//  TRASPLANTE
+//  GUÍA DE FERTILIZANTE
 // ════════════════════════════════
+const FERTILIZANTES_DB = {
+  triple15: {
+    nombre: 'Triple 15 (NPK 15-15-15)',
+    guia: (tipo, frecDias) => {
+      const dosis = {
+        'Suculenta/Cactus': '0.5g por litro de agua',
+        'Interior': '1g por litro de agua',
+        'Exterior': '1.5g por litro de agua',
+        'Flor': '1.5g por litro de agua',
+        'Frutal': '2g por litro de agua',
+        'Aromática': '0.5g por litro de agua',
+      }[tipo] || '1g por litro de agua';
+      return `💧 <b>Dosis:</b> ${dosis}<br>🗓️ <b>Frecuencia:</b> Cada ${frecDias} días<br>⚠️ Siempre disolver bien antes de regar. Aplicar sobre tierra húmeda, nunca seca. No fertilizar en invierno ni plantas recién trasplantadas.`;
+    }
+  },
+  orquideas: {
+    nombre: 'Fertilizante para orquídeas',
+    guia: (tipo, frecDias) =>
+      `💧 <b>Dosis:</b> La indicada en el empaque (suele ser 1-2ml/litro)<br>🗓️ <b>Frecuencia:</b> Cada ${frecDias} días, solo cuando está en crecimiento activo<br>⚠️ Aplicar después de regar. No fertilizar en reposo ni en floración plena.`
+  },
+  cactus: {
+    nombre: 'Fertilizante cactus/suculentas',
+    guia: (tipo, frecDias) =>
+      `💧 <b>Dosis:</b> Media dosis de lo indicado en el empaque<br>🗓️ <b>Frecuencia:</b> Cada ${frecDias} días, SOLO en primavera y verano<br>⚠️ Nunca fertilizar en otoño/invierno. Tierra seca antes de aplicar.`
+  },
+  acidofilas: {
+    nombre: 'Fertilizante acidófilas',
+    guia: (tipo, frecDias) =>
+      `💧 <b>Dosis:</b> La indicada en el empaque<br>🗓️ <b>Frecuencia:</b> Cada ${frecDias} días en temporada de crecimiento<br>⚠️ Ideal para camelias, gardenias, hortensias. Mantiene pH ácido (5-6). No usar en plantas de interior comunes.`
+  },
+  humus: {
+    nombre: 'Humus de lombriz',
+    guia: (tipo, frecDias) =>
+      `🪴 <b>Dosis:</b> 1-2 cucharadas por maceta mediana, mezclado con la tierra superficial<br>🗓️ <b>Frecuencia:</b> Cada 45-60 días<br>✅ Orgánico y muy suave — difícil de quemar la planta. Ideal para mezclar con el sustrato al trasplantar.`
+  },
+  compost: {
+    nombre: 'Compost / abono orgánico',
+    guia: (tipo, frecDias) =>
+      `🪴 <b>Dosis:</b> Una capa de 1-2cm sobre la tierra de la maceta<br>🗓️ <b>Frecuencia:</b> Cada 60 días<br>✅ Muy seguro y natural. Riega después de aplicar para que los nutrientes penetren.`
+  },
+  npk_floracion: {
+    nombre: 'NPK floración (alto P y K)',
+    guia: (tipo, frecDias) =>
+      `💧 <b>Dosis:</b> La indicada en el empaque (suele ser 1-2ml/litro)<br>🗓️ <b>Frecuencia:</b> Cada ${frecDias} días cuando veas botones florales<br>⚠️ Solo usar cuando la planta esté por florecer. Alto en fósforo y potasio = más flores y frutos.`
+  },
+  foliar: {
+    nombre: 'Fertilizante foliar',
+    guia: (tipo, frecDias) =>
+      `🌿 <b>Dosis:</b> Diluir según el empaque, rociar directamente en hojas<br>🗓️ <b>Frecuencia:</b> Cada 15-21 días<br>⚠️ Aplicar en la mañana o tarde, nunca con sol directo. No mojar flores. Muy útil para plantas con deficiencias visibles.`
+  },
+  osmocote: {
+    nombre: 'Osmocote (liberación lenta)',
+    guia: (tipo, frecDias) =>
+      `🪴 <b>Dosis:</b> 3-5 bolitas por maceta pequeña, 5-10 por maceta mediana<br>🗓️ <b>Frecuencia:</b> Cada 3-4 meses — ¡se libera solo con cada riego!<br>✅ El más fácil de usar. Mezclar con la tierra superficial. No requiere medir ni disolver.`
+  },
+  ninguno: {
+    nombre: 'Sin fertilizante',
+    guia: () =>
+      `🌱 Sin fertilizante por ahora. Puedes compensar usando sustrato fresco con nutrientes cada vez que trasplantes, o agregando compost a la tierra.`
+  }
+};
+
+function actualizarGuiaFertilizante() {
+  const sel   = document.getElementById('f-fertilizante-tipo').value;
+  const guia  = document.getElementById('guia-fertilizante');
+  const texto = document.getElementById('guia-fertilizante-texto');
+  if (!sel) { guia.style.display = 'none'; return; }
+  const tipo     = document.getElementById('f-tipo').value;
+  const frecDias = parseInt(document.getElementById('f-fertilizacion').value) || 30;
+  const datos    = FERTILIZANTES_DB[sel];
+  if (datos) {
+    texto.innerHTML = datos.guia(tipo, frecDias);
+    guia.style.display = 'block';
+  }
+}
+
+
 function abrirTrasplante(i) {
   const p = plantas[i];
   document.getElementById('trasplante-overlay').classList.add('open');
@@ -2171,8 +2287,8 @@ function closeForm() {
   document.getElementById('form-overlay').classList.remove('open');
   document.getElementById('f-nombre').value = '';
   document.getElementById('f-notas').value = '';
-  document.getElementById('f-riego').value = '7';
-  document.getElementById('f-fertilizacion').value = '30';
+  document.getElementById('f-fertilizante-tipo').value = '';
+  document.getElementById('guia-fertilizante').style.display = 'none';
   document.getElementById('foto-preview').style.display = 'none';
   document.getElementById('btn-identificar').style.display = 'none';
   document.getElementById('identificar-resultado').style.display = 'none';
@@ -2217,6 +2333,7 @@ async function guardarPlanta() {
     tipo: document.getElementById('f-tipo').value,
     frecRiego: parseInt(document.getElementById('f-riego').value) || 7,
     frecFert: parseInt(document.getElementById('f-fertilizacion').value) || 30,
+    fertilizanteTipo: document.getElementById('f-fertilizante-tipo').value || '',
     notas: document.getElementById('f-notas').value.trim(),
     emoji: selectedEmoji,
     foto: fotoBase64,
