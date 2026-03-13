@@ -941,10 +941,14 @@
 
       <div style="margin-bottom:8px">
         <label style="font-size:0.75rem;font-weight:700;color:var(--texto-suave);text-transform:uppercase;letter-spacing:0.05em;display:block;margin-bottom:6px">Contraseña</label>
-        <input id="login-pass" type="password" placeholder="Mínimo 6 caracteres" autocomplete="current-password"
-          style="width:100%;padding:12px 14px;border:2px solid var(--crema-oscuro);border-radius:12px;font-family:'Lato',sans-serif;font-size:0.95rem;color:var(--texto);background:var(--crema);outline:none;transition:border 0.2s"
-          onfocus="this.style.borderColor='var(--verde-medio)'" onblur="this.style.borderColor='var(--crema-oscuro)'"
-          onkeydown="if(event.key==='Enter')loginConCorreo()">
+        <div style="position:relative">
+          <input id="login-pass" type="password" placeholder="Mínimo 6 caracteres" autocomplete="current-password"
+            style="width:100%;padding:12px 44px 12px 14px;border:2px solid var(--crema-oscuro);border-radius:12px;font-family:'Lato',sans-serif;font-size:0.95rem;color:var(--texto);background:var(--crema);outline:none;transition:border 0.2s"
+            onfocus="this.style.borderColor='var(--verde-medio)'" onblur="this.style.borderColor='var(--crema-oscuro)'"
+            onkeydown="if(event.key==='Enter')loginConCorreo()">
+          <button type="button" onclick="togglePass()" id="toggle-pass-btn"
+            style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:1.1rem;padding:4px;color:var(--texto-suave)">👁️</button>
+        </div>
       </div>
 
       <p id="login-error" style="min-height:18px;font-size:0.8rem;color:var(--rojo-alerta);margin-bottom:12px;text-align:center"></p>
@@ -1274,6 +1278,18 @@ let plantas = [];
 let selectedEmoji = '🪴';
 let fotoBase64 = null;
 let activeGuia = null;
+
+function togglePass() {
+  const input = document.getElementById('login-pass');
+  const btn   = document.getElementById('toggle-pass-btn');
+  if (input.type === 'password') {
+    input.type = 'text';
+    btn.textContent = '🙈';
+  } else {
+    input.type = 'password';
+    btn.textContent = '👁️';
+  }
+}
 
 function loginConCorreo() {
   const email = document.getElementById('login-email').value.trim();
