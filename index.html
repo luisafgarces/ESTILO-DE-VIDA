@@ -2028,7 +2028,7 @@ async function identificarPlanta() {
             parts: [
               { inline_data: { mime_type: 'image/jpeg', data: base64Data } },
               { text: `Identifica esta planta con precisión. Responde ÚNICAMENTE en este formato, una línea por campo, sin texto adicional:
-NOMBRE: [nombre común en español]
+NOMBRE: [nombre común en español, usa estos nombres estándar si aplica: Sansevieria, Pothos, Monstera, Filodendro, Espatifilo, Zamioculca, Aloe Vera, Cinta, Calathea, Costilla de Adán, Anturio, Orquídea, Suculenta, Cactus]
 TIPO: [exactamente uno de: Interior / Exterior / Suculenta/Cactus / Flor / Frutal / Aromática]
 RIEGO: [número entero de días entre riegos]
 FERTILIZACION: [número entero de días entre fertilizaciones]
@@ -2081,12 +2081,31 @@ Si no es una planta escribe solo: NO_ES_PLANTA` }
         notasIA      ? `📝 ${notasIA}` : '',
       ].filter(Boolean).join('. ');
 
-      // Si está en DB local, la DB tiene prioridad (datos verificados)
-      // Si no está en DB, usar lo que devolvió la IA
-      const dbDatos = PLANTAS_DB[nombre];
+      // Buscar en DB por nombre exacto o por nombre alternativo
+      const NOMBRES_ALTERNATIVOS = {
+        'Lengua de Suegra': 'Sansevieria',
+        'Lengua de suegra': 'Sansevieria',
+        'Snake Plant': 'Sansevieria',
+        'Sansevieria enana': 'Sansevieria',
+        'Lengua de Suegra Enana': 'Sansevieria',
+        'Planta de la Serpiente': 'Sansevieria',
+        'Cola de Caballo': 'Sansevieria',
+        'Costilla de Adam': 'Costilla de Adán',
+        'Monstera Deliciosa': 'Monstera',
+        'Filodendro corazón': 'Filodendro',
+        'Pothos Dorado': 'Pothos',
+        'Poto': 'Pothos',
+        'Paz Lily': 'Espatifilo',
+        'Lirio de la Paz': 'Espatifilo',
+        'ZZ Plant': 'Zamioculca',
+        'Árbol de Jade': 'Suculenta',
+        'Aloe': 'Aloe Vera',
+      };
+      const nombreDB = NOMBRES_ALTERNATIVOS[nombre] || nombre;
+      const dbDatos = PLANTAS_DB[nombreDB];
       if (dbDatos) {
         // Usar todo de la DB
-        document.getElementById('f-nombre').value = nombre;
+        document.getElementById('f-nombre').value = nombreDB;
         document.getElementById('f-tipo').value   = dbDatos.tipo;
         document.getElementById('f-riego').value  = dbDatos.riego;
         document.getElementById('f-fertilizacion').value = dbDatos.fert;
