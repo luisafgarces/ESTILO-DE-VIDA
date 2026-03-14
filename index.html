@@ -2013,24 +2013,33 @@ Sé específico, práctico y cálido. Si la planta se ve sana, dilo con entusias
     }
 
     const lineas = texto.split('\n').filter(l => l.trim());
-    const get = (key) => { const l = lineas.find(l => l.startsWith(key)); return l ? l.substring(l.indexOf(':') + 1).trim() : ''; };
+    const get = (key) => {
+      const l = lineas.find(l => l.toUpperCase().startsWith(key.toUpperCase()));
+      return l ? l.substring(l.indexOf(':') + 1).trim() : '';
+    };
 
-    const estado = get('ESTADO');
-    const problema = get('PROBLEMA');
-    const causa = get('CAUSA');
-    const solucion = get('SOLUCIÓN');
-    const prevencion = get('PREVENCIÓN');
+    const estado    = get('ESTADO');
+    const problema  = get('PROBLEMA');
+    const causa     = get('CAUSA');
+    const solucion  = get('SOLUCIÓN') || get('SOLUCION');
+    const prevencion = get('PREVENCIÓN') || get('PREVENCION');
 
     const claseGravedad = estado?.toLowerCase().includes('grave') ? 'dx-grave' : estado?.toLowerCase().includes('saludable') ? 'dx-ok' : '';
     const emoji = estado?.toLowerCase().includes('grave') ? '🚨' : estado?.toLowerCase().includes('saludable') ? '✅' : '⚠️';
 
+    // Si no pudo parsear los campos, mostrar el texto completo
+    const contenido = (problema || causa || solucion || prevencion)
+      ? `
+        ${problema  ? `<div class="dx-seccion"><span class="dx-label">🔍 ¿Qué veo?</span>${problema}</div>` : ''}
+        ${causa     ? `<div class="dx-seccion"><span class="dx-label">💡 Posible causa</span>${causa}</div>` : ''}
+        ${solucion  ? `<div class="dx-seccion"><span class="dx-label">💊 Solución</span>${solucion}</div>` : ''}
+        ${prevencion ? `<div class="dx-seccion"><span class="dx-label">🛡️ Prevención</span>${prevencion}</div>` : ''}`
+      : `<div class="dx-seccion">${texto.replace(/\n/g,'<br>')}</div>`;
+
     resultado.innerHTML = `
       <div class="diagnostico-card ${claseGravedad}">
-        <div class="dx-titulo">${emoji} ${estado}</div>
-        ${problema ? `<div class="dx-seccion"><span class="dx-label">¿Qué veo?</span>${problema}</div>` : ''}
-        ${causa ? `<div class="dx-seccion"><span class="dx-label">Posible causa</span>${causa}</div>` : ''}
-        ${solucion ? `<div class="dx-seccion"><span class="dx-label">💊 Solución</span>${solucion}</div>` : ''}
-        ${prevencion ? `<div class="dx-seccion"><span class="dx-label">🛡️ Prevención</span>${prevencion}</div>` : ''}
+        <div class="dx-titulo">${emoji} ${estado || 'Diagnóstico'}</div>
+        ${contenido}
       </div>`;
 
   } catch(e) {
