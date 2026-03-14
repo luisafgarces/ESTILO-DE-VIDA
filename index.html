@@ -1980,7 +1980,17 @@ Sé específico, práctico y cálido. Si la planta se ve sana, dilo con entusias
     );
 
     const data = await res.json();
+
+    if (data.error) {
+      resultado.innerHTML = `<div class="diagnostico-card"><span class="dx-label">Error API</span>${data.error.message}</div>`;
+      btn.disabled = false; btn.textContent = '🔬 Analizar con IA'; return;
+    }
+
     const texto = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    if (!texto) {
+      resultado.innerHTML = `<div class="diagnostico-card"><span class="dx-label">Sin respuesta</span>La IA no pudo analizar. Intenta con otra foto más clara.</div>`;
+      btn.disabled = false; btn.textContent = '🔬 Analizar con IA'; return;
+    }
 
     const lineas = texto.split('\n').filter(l => l.trim());
     const get = (key) => { const l = lineas.find(l => l.startsWith(key)); return l ? l.substring(l.indexOf(':') + 1).trim() : ''; };
@@ -2004,7 +2014,7 @@ Sé específico, práctico y cálido. Si la planta se ve sana, dilo con entusias
       </div>`;
 
   } catch(e) {
-    resultado.innerHTML = `<div class="diagnostico-card"><span class="dx-label">Error</span>No se pudo analizar. Verifica tu API key y conexión a internet.</div>`;
+    resultado.innerHTML = `<div class="diagnostico-card"><span class="dx-label">Error</span>${e.message}</div>`;
   }
 
   btn.disabled = false;
