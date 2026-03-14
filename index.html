@@ -39,6 +39,8 @@
     const q = query(collection(db, 'users', userId, 'plantas'), orderBy('creadaEn', 'asc'));
     unsubscribe = onSnapshot(q, snap => {
       window.plantas = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+      // Sincronizar localStorage con lo que viene de Firebase (fuente de verdad)
+      localStorage.setItem('mismatas_plantas', JSON.stringify(window.plantas));
       if (window.renderPlantas) window.renderPlantas();
       if (window.showToast) window.showToast('☁️ Sincronizado');
     }, err => console.error('Firestore error:', err));
