@@ -1985,16 +1985,16 @@ async function ejecutarDiagnostico() {
           contents: [{
             parts: [
               { inline_data: { mime_type: 'image/jpeg', data: base64Data } },
-              { text: `Eres un experto botánico. ${contextoPlanta}
-Analiza el estado de salud de esta planta en la foto. Responde ÚNICAMENTE en este formato exacto, sin texto adicional antes ni después:
-ESTADO: [Saludable / Leve problema / Problema grave]
-PROBLEMA: [describe qué ves en máximo 2 oraciones]
-CAUSA: [probable causa en máximo 2 oraciones]
-SOLUCIÓN: [pasos concretos, máximo 3 pasos]
-PREVENCIÓN: [cómo evitarlo en el futuro, máximo 2 oraciones]` }
+              { text: `Eres experto botánico. Planta: ${planta.nombre} (${planta.tipo}). ${planta.notas ? 'Cuidados: ' + planta.notas.substring(0,100) : ''}
+Analiza esta foto y responde exactamente así (una línea por campo):
+ESTADO: Saludable / Leve problema / Problema grave
+PROBLEMA: (qué ves)
+CAUSA: (por qué ocurre)
+SOLUCIÓN: (qué hacer)
+PREVENCIÓN: (cómo evitarlo)` }
             ]
           }],
-          generationConfig: { maxOutputTokens: 600 }
+          generationConfig: { maxOutputTokens: 1024 }
         })
       }
     );
