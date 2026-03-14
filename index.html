@@ -1983,15 +1983,12 @@ async function ejecutarDiagnostico() {
             parts: [
               { inline_data: { mime_type: 'image/jpeg', data: base64Data } },
               { text: `Eres un experto botánico. ${contextoPlanta}
-Analiza el estado de salud de esta planta en la foto. Responde en español con este formato exacto:
-
+Analiza el estado de salud de esta planta en la foto. Responde ÚNICAMENTE en este formato exacto, sin texto adicional antes ni después:
 ESTADO: [Saludable / Leve problema / Problema grave]
-PROBLEMA: [describe qué ves, o "Sin problemas detectados"]
-CAUSA: [probable causa]
-SOLUCIÓN: [pasos concretos a seguir]
-PREVENCIÓN: [cómo evitarlo en el futuro]
-
-Sé específico, práctico y cálido. Si la planta se ve sana, dilo con entusiasmo.` }
+PROBLEMA: [describe qué ves en máximo 2 oraciones]
+CAUSA: [probable causa en máximo 2 oraciones]
+SOLUCIÓN: [pasos concretos, máximo 3 pasos]
+PREVENCIÓN: [cómo evitarlo en el futuro, máximo 2 oraciones]` }
             ]
           }],
           generationConfig: { maxOutputTokens: 600 }
