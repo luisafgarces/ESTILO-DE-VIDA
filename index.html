@@ -348,11 +348,12 @@
   .form-sheet {
     background: var(--blanco);
     border-radius: 24px 24px 0 0;
-    padding: 24px 20px 40px;
+    padding: 24px 20px 60px;
     width: 100%;
     max-width: 600px;
-    max-height: 90vh;
+    max-height: 85vh;
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     animation: slideUp 0.3s ease;
   }
 
@@ -790,6 +791,8 @@
     border-radius: 14px;
     padding: 16px;
     border-left: 4px solid var(--tierra);
+    word-break: break-word;
+    overflow-wrap: break-word;
   }
   .diagnostico-card .dx-titulo {
     font-family: 'Playfair Display', serif;
