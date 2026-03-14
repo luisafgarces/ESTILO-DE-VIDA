@@ -36,7 +36,7 @@
 
   function suscribirPlantas(userId) {
     if (unsubscribe) unsubscribe();
-    const q = query(collection(db, 'usuarios', userId, 'plantas'), orderBy('creadaEn', 'asc'));
+    const q = query(collection(db, 'users', userId, 'plantas'), orderBy('creadaEn', 'asc'));
     unsubscribe = onSnapshot(q, snap => {
       window.plantas = snap.docs.map(d => ({ ...d.data(), id: d.id }));
       if (window.renderPlantas) window.renderPlantas();
@@ -66,12 +66,12 @@
 
   window._fbSavePlanta = async (planta) => {
     if (!window._fbUserId) return;
-    await setDoc(doc(db, 'usuarios', window._fbUserId, 'plantas', String(planta.id)), planta);
+    await setDoc(doc(db, 'users', window._fbUserId, 'plantas', String(planta.id)), planta);
   };
 
   window._fbDeletePlanta = async (plantaId) => {
     if (!window._fbUserId) return;
-    await deleteDoc(doc(db, 'usuarios', window._fbUserId, 'plantas', String(plantaId)));
+    await deleteDoc(doc(db, 'users', window._fbUserId, 'plantas', String(plantaId)));
   };
 
   // Login: intenta entrar, si no existe la cuenta la crea automáticamente
@@ -1648,6 +1648,7 @@ async function pedirConsejoTrasplanteIA() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          model: 'gemini-2.5-flash',
           contents: [{ parts: [{ text:
             `Soy jardinera y tengo un/una ${p.nombre} (tipo: ${p.tipo}). 
             ${p.notas ? 'Notas de cuidado: ' + p.notas : ''}
@@ -1879,6 +1880,7 @@ async function sendMessage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          model: 'gemini-2.5-flash',
           systemInstruction: { parts: [{ text: sistemaPrompt }] },
           contents: [{ role: 'user', parts: [{ text: msg }] }],
           generationConfig: { maxOutputTokens: 1000 }
@@ -1956,6 +1958,7 @@ async function ejecutarDiagnostico() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          model: 'gemini-2.5-flash',
           contents: [{
             parts: [
               { inline_data: { mime_type: 'image/jpeg', data: base64Data } },
@@ -2140,6 +2143,7 @@ async function identificarPlanta() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          model: 'gemini-2.5-flash',
           contents: [{
             parts: [
               { inline_data: { mime_type: 'image/jpeg', data: base64Data } },
