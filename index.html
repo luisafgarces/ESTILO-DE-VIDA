@@ -1290,8 +1290,14 @@
       <textarea id="f-notas" placeholder="Ej: Le gusta el sol de la mañana, tierra bien drenada..."></textarea>
     </div>
 
-    <button class="btn-primary" onclick="guardarPlanta()">Guardar planta 🌿</button>
-    <button class="btn-secondary" onclick="closeForm()">Cancelar</button>
+    <button id="btn-guardar-planta" type="button"
+      style="width:100%;padding:16px;background:linear-gradient(135deg,var(--verde-oscuro),var(--verde-medio));color:white;border:none;border-radius:16px;font-family:'Lato',sans-serif;font-size:1.1rem;font-weight:700;cursor:pointer;margin-bottom:10px;-webkit-tap-highlight-color:transparent;touch-action:manipulation">
+      Guardar planta 🌿
+    </button>
+    <button type="button" onclick="closeForm()"
+      style="width:100%;padding:14px;background:var(--crema-oscuro);color:var(--texto);border:none;border-radius:16px;font-family:'Lato',sans-serif;font-size:1rem;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation">
+      Cancelar
+    </button>
   </div>
 </div>
 
@@ -1332,14 +1338,26 @@ function loginConCorreo() {
 }
 
 function load() {
-  // Firebase listener handles loading. Fallback solo si no hay Firebase.
   if (!window._fbConfigured) {
     try { plantas = JSON.parse(localStorage.getItem('mismatas_plantas') || '[]'); } catch(e) { plantas = []; }
   }
-  // Mostrar login screen hasta que Firebase resuelva el estado de auth
   if (window._fbConfigured) {
     document.getElementById('login-screen').style.display = 'flex';
     document.getElementById('app-content').style.display = 'none';
+  }
+
+  // Botón guardar — compatible con iOS (touchend + click)
+  const btnGuardar = document.getElementById('btn-guardar-planta');
+  if (btnGuardar) {
+    let guardando = false;
+    const handler = (e) => {
+      e.preventDefault();
+      if (guardando) return;
+      guardando = true;
+      guardarPlanta().finally(() => { guardando = false; });
+    };
+    btnGuardar.addEventListener('touchend', handler, { passive: false });
+    btnGuardar.addEventListener('click', handler);
   }
 }
 
@@ -2350,7 +2368,7 @@ async function guardarPlanta() {
   const nombre = document.getElementById('f-nombre').value.trim();
   if (!nombre) { showToast('Ponle un nombre a tu mata 🌿'); return; }
 
-  const btnGuardar = document.querySelector('#form-overlay .btn-primary');
+  const btnGuardar = document.getElementById('btn-guardar-planta');
   btnGuardar.disabled = true;
   btnGuardar.textContent = 'Guardando...';
 
