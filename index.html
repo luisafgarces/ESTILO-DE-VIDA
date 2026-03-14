@@ -2302,14 +2302,21 @@ function openForm() {
 function closeForm() {
   document.getElementById('form-overlay').classList.remove('open');
   document.getElementById('f-nombre').value = '';
+  document.getElementById('f-tipo').value = 'Interior';
+  document.getElementById('f-riego').value = '7';
+  document.getElementById('f-fertilizacion').value = '30';
   document.getElementById('f-notas').value = '';
   document.getElementById('f-fertilizante-tipo').value = '';
   document.getElementById('guia-fertilizante').style.display = 'none';
   document.getElementById('foto-preview').style.display = 'none';
   document.getElementById('btn-identificar').style.display = 'none';
   document.getElementById('identificar-resultado').style.display = 'none';
+  // Limpiar sugerencias
+  const lista = document.getElementById('sugerencias-lista');
+  if (lista) { lista.classList.remove('open'); lista.innerHTML = ''; }
   fotoBase64 = null;
   selectedEmoji = '🪴';
+  buildEmojiPicker();
 }
 
 function buildEmojiPicker() {
@@ -2341,29 +2348,46 @@ function previewFoto(input) {
 
 async function guardarPlanta() {
   const nombre = document.getElementById('f-nombre').value.trim();
-  if(!nombre) { showToast('Ponle un nombre a tu mata 🌿'); return; }
+  if (!nombre) { showToast('Ponle un nombre a tu mata 🌿'); return; }
 
-  const nueva = {
-    id: Date.now(),
-    nombre,
-    tipo: document.getElementById('f-tipo').value,
-    frecRiego: parseInt(document.getElementById('f-riego').value) || 7,
-    frecFert: parseInt(document.getElementById('f-fertilizacion').value) || 30,
-    fertilizanteTipo: document.getElementById('f-fertilizante-tipo').value || '',
-    notas: document.getElementById('f-notas').value.trim(),
-    emoji: selectedEmoji,
-    foto: fotoBase64,
-    ultimoRiego: null,
-    ultimaFert: null,
-    riegos: 0,
-    creadaEn: new Date().toISOString()
-  };
+  const btnGuardar = document.querySelector('#form-overlay .btn-primary');
+  btnGuardar.disabled = true;
+  btnGuardar.textContent = 'Guardando...';
 
-  plantas.push(nueva);
-  await savePlanta(nueva);
-  closeForm();
-  if (!window._fbConfigured) renderPlantas(); // Firebase listener auto-renders when configured
-  showToast(`✅ ${nombre} agregada!`);
+  try {
+    // Comprimir foto si es muy grande antes de guardar
+    let fotoFinal = fotoBase64;
+    if (fotoFinal) {
+      try { fotoFinal = await comprimirImagen(fotoFinal, 600, 0.7); } catch(e) {}
+    }
+
+    const nueva = {
+      id: Date.now(),
+      nombre,
+      tipo: document.getElementById('f-tipo').value,
+      frecRiego: parseInt(document.getElementById('f-riego').value) || 7,
+      frecFert: parseInt(document.getElementById('f-fertilizacion').value) || 30,
+      fertilizanteTipo: document.getElementById('f-fertilizante-tipo').value || '',
+      notas: document.getElementById('f-notas').value.trim(),
+      emoji: selectedEmoji,
+      foto: fotoFinal,
+      ultimoRiego: null,
+      ultimaFert: null,
+      riegos: 0,
+      creadaEn: new Date().toISOString()
+    };
+
+    plantas.push(nueva);
+    await savePlanta(nueva);
+    closeForm();
+    showToast(`✅ ${nombre} guardada!`);
+  } catch(e) {
+    showToast('❌ Error al guardar: ' + e.message);
+    console.error(e);
+  }
+
+  btnGuardar.disabled = false;
+  btnGuardar.textContent = 'Guardar planta 🌿';
 }
 
 async function eliminarPlanta(i) {
